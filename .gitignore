@@ -1,0 +1,10 @@
+.DS_Store
+RESULTS/**
+Checks_and_investigations/**
+Data_ID/elbas**
+Data_ID/ID_Finland**
+Data_ID/FTP**
+Data_DA/DA_price**
+Data_DA/imbalance**
+Data_FCRD/FCR**
+Data_wind/wind**
