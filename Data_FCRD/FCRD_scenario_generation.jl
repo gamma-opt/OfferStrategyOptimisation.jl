@@ -21,9 +21,3 @@ function reserve_price_scenario_generation(path::String, dates::Vector{String}, 
         println("number of scenarios S don't match!!")
     end
 end
-
-#############
-# dates = ["20210303", "20210310", "20210317", "20210324", "20210331", 
-#         "20220302", "20220309", "20220316", "20220323", "20220330",
-#         "20230301", "20230308", "20230315"] 
-#reserve_price_scenario_generation("", dates, 24, 1:24, 13, 1:13)
