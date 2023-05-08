@@ -8,6 +8,8 @@ using StatsBase
 using Gurobi
 using PrettyTables
 using Dates
+using JLD
+
 
 @info("Start time    ("*Dates.format(now(), "HH:MM")*")")
 ##########################################################################################
@@ -20,11 +22,11 @@ dt = 1
 
 
 ## -- Scenarios--
-dates = ["20220302", "20220309", "20220316", "20220323", "20220330", "20220406", "20220413", 
-"20230222", "20230301", "20230308", "20230315"]
+dates = ["20220301", "20220302", "20220308", "20220309", "20220315", "20220316",
+"20230221","20230222", "20230228", "20230301"]
 
 nS = length(dates)
-nE = 3  # <=
+nE = 6  # <=
 nW = 3
 S = 1:nS
 E = 1:nE
@@ -36,35 +38,20 @@ W = 1:nW
 
 
 ## -- Price steps in offers --
-pI = [-500, 0, 25, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 175, 200, 300, 400, 4000.0]
+pI = [-500, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 400, 4000.0]
 nI = length(pI)
 I = 1:nI
 
-pJ = [1.0, 2, 3, 4, 5, 7, 10, 101]
+pJ = [1.0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 100, 251]
 nJ = length(pJ)
 J = 1:nJ
 
 @info("S = "*string(nS)*", E = "*string(nE)*", W = "*string(nW)*", I = "*string(nI)*", J = "*string(nJ))
 
 
-## -- Intraday trading limit (percentage of capacity) --
-α = 0.05
-
-
 ## -- Cost and operational parameters --
 include("costs_and_operational_parameters.jl")
 
-##########################################################################################
-
-## -- Setting path for results --
-path = "RESULTS/I"*string(nI)*"_J"*string(nJ)*"_E"*string(nE)*"/"
-isdir(path) || mkdir(path)
-@info("path = "*path)
-
-# Results saving
-draw_plots = true
-save_curves = true
-save_results_breakdown = true
 
 ##########################################################################################
 @info("Generating scenarios")
@@ -88,7 +75,7 @@ balance_prices_up, balance_prices_down = imbalance_price_scenario_generation("Da
                     factor = 2)
 
 wind_factors = wind_scenario_generation("Data_wind/", dates, nT, T, nS, S, nE, nW, 
-                                        stdev = 0.074, 
+                                        stdev = 0.0667, 
                                         round_to_digits = 8, 
                                         seed = random_seed)
 
@@ -99,8 +86,31 @@ wind_factors = wind_scenario_generation("Data_wind/", dates, nT, T, nS, S, nE, n
 ## -- MODEL --
 model = Model()
 
+##########################################################################################
+
+# DEFINE RUN-SPECIFIC PARAMETERS HERE
+
+## -- Intraday trading limit (percentage of capacity) --
+α = 0.05
+
+timelimit1 = 600
+timelimit2 = 3600
+
+## -- Setting path for results --
+path = "RESULTS/Full_model/All_markets_alpha"*string(α)*"/"
+isdir(path) || mkdir(path)
+@info("path = "*path)
+
+# Results saving
+draw_plots = true
+save_curves = true
+save_results_breakdown = true
+write_jld = true
+
 ## -- Variables --
 include("variables.jl")
+
+##########################################################################################
 
 ## -- Objective --
 include("objective_functions.jl")
@@ -163,8 +173,7 @@ CCGT_reserve_capacity = CCGT_reserve_capacity_constraints!(model, r_CCGT, R_CCGT
 
 optimizer = optimizer_with_attributes(
     () -> Gurobi.Optimizer(Gurobi.Env()),
-    "IntFeasTol"  => 1e-6,
-    "TimeLimit"   => 300,
+    "TimeLimit"   => timelimit1,
     "LogFile" => path*"solve_1.txt",
     "LogToConsole" => 0,
 )
@@ -197,9 +206,8 @@ new_objective = objective_degenerate_solutions!(model, delta_excess, delta_defic
 
 optimizer = optimizer_with_attributes(
     () -> Gurobi.Optimizer(Gurobi.Env()),
-    "IntFeasTol"  => 1e-6,
     "MIPFocus"    => 3,
-    "TimeLimit"   => 1200,
+    "TimeLimit"   => timelimit2,
     "LogFile" => path*"solve_2.txt",
     "LogToConsole" => 0,
 )
@@ -211,7 +219,7 @@ optimize!(model)
 
 
 # Saving summary for printing
-second_solve = olve_time(model)
+second_solve = solve_time(model)
 println("solve time: ", second_solve)
 
 ##########################################################################################
@@ -272,9 +280,10 @@ if save_results_breakdown
     write(io, "S = "*string(nS)*"\nE = "*string(nE)*"\nW = "*string(nW)*"\n\nalpha = "*string(α));
 
     write(io, "\n\n\nI = "*string(nI)*"\nJ = "*string(nJ));
+    write(io, "\n\npI = "*string(pI)*"\npJ = "*string(pJ));
 
-    write(io, "\n\nfirst solution time: ", first_solve)
-    write(io, "\nsecond solution time: ", second_solve)
+    write(io, "\n\nfirst solution time: "*string(round(first_solve, digits=2)))
+    write(io, "\nsecond solution time: "*string(round(second_solve,digits=2)))
 
     write(io, "\n\n\n*********************************************\n\n");
 
@@ -336,4 +345,36 @@ if save_results_breakdown
     pretty_table(io, commitments)
 
     close(io)
+end
+
+if write_jld
+    file = jldopen(path*"variable_values.jld","w")
+
+    file["x"] = [value(x[i,t]) for i in I, t in T]
+    file["v"] = [value(v[j,t]) for j in J, t in T]
+    file["r"] = [value(r[t,s]) for t in T, s in S]
+    file["z"] = [value(z[t,s,e]) for t in T, s in S, e in E]
+
+    file["delta_excess"] = [value(delta_excess[t,s,e,w]) for t in T, s in S, e in E, w in W]
+    file["delta_deficit"] = [value(delta_deficit[t,s,e,w]) for t in T, s in S, e in E, w in W]
+
+    file["g_hydro"] = [value(g_hydro[t,s,e]) for t in T, s in S, e in E]
+    file["u_hydro"] = [value(u_hydro[t,s,e]) for t in T, s in S, e in E]
+    file["u_hydro_start"] = [value(u_hydro_start[t,s,e]) for t in T, s in S, e in E]
+    file["u_hydro_stop"] = [value(u_hydro_stop[t,s,e]) for t in T, s in S, e in E]
+    file["f_hydro"] = [value(f_hydro[t,s,e]) for t in T, s in S, e in E]
+    file["f_hydro_spill"] = [value(f_hydro_spill[t,s,e]) for t in T, s in S, e in E]
+    file["l_hydro"] = [value(l_hydro[t,s,e]) for t in T, s in S, e in E]
+    file["r_hydro"] = [value(r_hydro[t,s,e]) for t in T, s in S, e in E]
+
+
+    file["g_CCGT"] = [value(g_CCGT[t,s,e]) for t in T, s in S, e in E]
+    file["u_CCGT"] = [value(u_CCGT[t,s,e]) for t in T, s in S, e in E]
+    file["u_CCGT_start"] = [value(u_CCGT_start[t,s,e]) for t in T, s in S, e in E]
+    file["u_CCGT_stop"] = [value(u_CCGT_stop[t,s,e]) for t in T, s in S, e in E]
+    file["r_CCGT"] = [value(r_CCGT[t,s,e]) for t in T, s in S, e in E]
+
+    file["g_wind"] = [value(g_wind[t,s,e,w]) for t in T, s in S, e in E, w in W]
+
+    close(file)
 end
