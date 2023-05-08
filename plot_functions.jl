@@ -82,10 +82,10 @@ function plot_transposed_reserve_offer_curve(v, pJ, h::Int, path::String; plot_r
     curve = cumsum(bids)
 
     if default_limits
-        plot(pJ, curve, label = "", linetype=:steppre, c = :blue, lw = 1.5, ylim = (0, 104), xlim = (-10, 200), legend=:topleft,  dpi=200, size = (600, 500))
+        plot(pJ, curve, label = "", linetype=:steppost, c = :blue, lw = 1.5, ylim = (0, 104), xlim = (-10, 200), legend=:topleft,  dpi=200, size = (600, 500))
         xticks!(25*[1:14]...)
     else
-        plot(pJ, curve, label = "", linetype=:steppre, c = :blue, lw = 1.5, xlim = price_limits, legend=:topleft,  dpi=200, size = (600, 500))
+        plot(pJ, curve, label = "", linetype=:steppost, c = :blue, lw = 1.5, xlim = price_limits, legend=:topleft,  dpi=200, size = (600, 500))
     end
 
     if plot_reserve_prices
