@@ -297,10 +297,11 @@ if save_results_breakdown
     profit_imbalances = sum(π_S[s] * π_E[e] * π_W[w] * (balance_prices_down[t,s,e,w] * value(delta_excess[t,s,e,w]) - balance_prices_up[t,s,e,w] * value(delta_deficit[t,s,e,w])) for t in T, s in S, e in E, w in W)
     excess_imbalances_revenue = sum(π_S[s] * π_E[e] * π_W[w] * balance_prices_down[t,s,e,w] * value(delta_excess[t,s,e,w]) for t in T, s in S, e in E, w in W)
     deficit_imbalances_cost = sum(π_S[s] * π_E[e] * π_W[w] * ( - balance_prices_up[t,s,e,w] * value(delta_deficit[t,s,e,w])) for t in T, s in S, e in E, w in W)
+    water_value = sum( π_S[s] * π_E[e] * (B_hydro[1] * value(l_hydro[24, s, e]) + B_hydro[2]) for s in S, e in E)
+    operating_costs = - sum(π_S[s] * π_E[e] * S_CCGT_generation * value(g_CCGT[t,s,e]) for t in T, s in S, e in E)
 
-
-    measures =  ["Profit", "DA profit", "Reserve profit", "ID profit", "ID revenue", "ID costs", "Imbalance settlement", "Imbalance revenue", "Imbalance costs"]
-    values = [obj_value, profit_DA, profit_reserve, profit_ID, revenue_ID, costs_ID, profit_imbalances, excess_imbalances_revenue, deficit_imbalances_cost]
+    measures =  ["Profit", "DA profit", "Reserve profit", "ID profit", "ID revenue", "ID costs", "Imbalance settlement", "Imbalance revenue", "Imbalance costs", "Water value", "Operating costs"]
+    values = [obj_value, profit_DA, profit_reserve, profit_ID, revenue_ID, costs_ID, profit_imbalances, excess_imbalances_revenue, deficit_imbalances_cost, water_value, operating_costs]
     profit_breakdown = DataFrame(Measure = measures, Values = values)
     pretty_table(io, profit_breakdown)
 
