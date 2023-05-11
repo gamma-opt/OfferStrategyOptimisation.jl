@@ -97,7 +97,9 @@ timelimit1 = 600
 timelimit2 = 3600
 
 ## -- Setting path for results --
-path = "RESULTS/Full_model/One_market_"*string(α)*"/"
+folder = "RESULTS/Final_model/"
+run_path = "One_market_DA_"*string(α)
+path = folder*run_path*"/"
 isdir(path) || mkdir(path)
 @info("path = "*path)
 
@@ -163,9 +165,6 @@ CCGT_on_off, CCGT_start, CCGT_stop = CCGT_on_off_constraints!(model, u_CCGT, u_C
 CCGT_min_off_time, CCGT_min_on_time = CCGT_on_off_min_time_constraints!(model, u_CCGT, u_CCGT_start, u_CCGT_stop, U_min_on_time, U_min_off_time, nT, T, S, E) #2x(TxSxE)
 
 ramping_lb, ramping_ub = CCGT_ramping_constraints!(model, g_CCGT, u_CCGT_start, u_CCGT_stop, C_CCGT, G_initial, G_min_level, dt, A_ramp_factor, T, S, E) #3x(TxSxE)
-
-CCGT_reserve_capacity = CCGT_reserve_capacity_constraints!(model, r_CCGT, R_CCGT, T, S, E) #(TxSxE)
-
 
 
 ##########################################################################################
@@ -275,7 +274,7 @@ end
 
 if save_results_breakdown
     ## -- Saving optimisation results --
-    io = open(path*"results.txt", "w");
+    io = open(path*"results_"*run_path*".txt", "w");
 
     write(io, "S = "*string(nS)*"\nE = "*string(nE)*"\nW = "*string(nW)*"\n\nalpha = "*string(α));
 
@@ -320,18 +319,20 @@ if save_results_breakdown
     CCGT = []
     CCGT_reserve = []
     wind = []
+    wind_curtailment = []
 
     for t in T
-        append!(DA_commitment, round(mean(value.(   y[t,:]  )), digits = 4))
-        append!(reserve_commitment, round(mean(value.(  r[t,:]  )), digits = 4))
-        append!(ID_commitment, round(mean(value.(   z[t,:,:]   )), digits = 4))
-        append!(excess, round(mean(value.(  delta_excess[t,:,:,:]   )), digits = 4))
-        append!(deficit, round(mean(value.( delta_deficit[t,:,:,:]   )), digits = 4))
-        append!(hydro, round(mean(value.(   g_hydro[t,:,:]  )), digits = 4))
-        append!(CCGT, round(mean(value.(    g_CCGT[t,:,:]   )), digits = 4))
-        append!(wind, round(mean(value.(    g_wind[t,:,:,:] )), digits = 4))
-        append!(hydro_reserve, round(mean(value.(   r_hydro[t,:,:]  )), digits = 4))
-        append!(CCGT_reserve, round(mean(value.(    r_CCGT[t,:,:]   )), digits = 4))
+        append!(DA_commitment, mean(value.(   y[t,:]  )))
+        append!(reserve_commitment, mean(value.(  r[t,:]  )))
+        append!(ID_commitment, mean(value.(   z[t,:,:]   )))
+        append!(excess, mean(value.(  delta_excess[t,:,:,:]   )))
+        append!(deficit, mean(value.( delta_deficit[t,:,:,:]   )))
+        append!(hydro, mean(value.(   g_hydro[t,:,:]  )))
+        append!(CCGT, mean(value.(    g_CCGT[t,:,:]   )))
+        append!(wind, mean(value.(    g_wind[t,:,:,:] )))
+        append!(hydro_reserve, mean(value.(   r_hydro[t,:,:]  )))
+        append!(CCGT_reserve, mean(value.(    r_CCGT[t,:,:]   )))
+        append!(wind_curtailment, mean( wind_factors[t,:,:,:]*40  - value.(g_wind[t,:,:,:])))
     end
     commitments.DA_commitment = DA_commitment
     commitments.Reserve_commitment = reserve_commitment
@@ -343,7 +344,12 @@ if save_results_breakdown
     commitments.CCGT = CCGT
     commitments.Reserve_CCGT = CCGT_reserve
     commitments.Wind = wind
-    pretty_table(io, commitments)
+    commitments.Wind_curtailment = wind_curtailment
+
+    pretty_table(io, commitments; formatters=ft_printf("%5.2f"))
+
+     # Save values to CSV
+    CSV.write(path*"Generation_"*run_path*".csv", commitments, index=false)
 
     close(io)
 end
