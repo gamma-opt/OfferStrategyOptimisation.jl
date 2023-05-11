@@ -308,7 +308,7 @@ function wind_generation_constraints!(model::Model, g_wind, W_realisation, C_win
     wind_generation = Dict{Tuple{Int64, Int64, Int64, Int64}, ConstraintRef}()
 
     for t in T, s in S, e in E, w in W
-        wind_generation[t,s,e,w] = @constraint(model, g_wind[t,s,e,w] == W_realisation[t,s,e,w] * C_wind * dt)
+        wind_generation[t,s,e,w] = @constraint(model, g_wind[t,s,e,w] ≤ W_realisation[t,s,e,w] * C_wind * dt)
     end
     wind_generation
 end
