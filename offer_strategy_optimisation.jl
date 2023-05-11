@@ -164,9 +164,6 @@ CCGT_min_off_time, CCGT_min_on_time = CCGT_on_off_min_time_constraints!(model, u
 
 ramping_lb, ramping_ub = CCGT_ramping_constraints!(model, g_CCGT, u_CCGT_start, u_CCGT_stop, C_CCGT, G_initial, G_min_level, dt, A_ramp_factor, T, S, E) #3x(TxSxE)
 
-CCGT_reserve_capacity = CCGT_reserve_capacity_constraints!(model, r_CCGT, R_CCGT, T, S, E) #(TxSxE)
-
-
 
 ##########################################################################################
 @info("Solving model    ("*Dates.format(now(), "HH:MM")*")")
