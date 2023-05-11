@@ -37,7 +37,7 @@ function imbalance_price_scenario_generation(path::String, dates::Vector{String}
             
                     # down-regulating hour as it is in data
                     low_up = data.DA_price
-                    low_down = max.(data.price_down - deviation, 0) # notice low_down << DA price
+                    low_down = data.price_down - deviation # notice low_down << DA price
 
                     mid_up = data.DA_price
                     mid_down = data.price_down # realisation
