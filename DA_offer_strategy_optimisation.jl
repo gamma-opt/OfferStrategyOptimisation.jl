@@ -104,10 +104,10 @@ isdir(path) || mkdir(path)
 @info("path = "*path)
 
 # Results saving
-draw_plots = true
-save_curves = true
-save_results_breakdown = true
-write_jld = true
+draw_plots = false
+save_curves = false
+save_results_breakdown = false
+write_jld = false
 
 ## -- Variables --
 include("variables_no_reserve_or_ID.jl")
@@ -137,13 +137,13 @@ first_stage_offer_limit = first_stage_offer_limit_constraints!(model, x, v, C_CC
 
 generation_capacity_limit = generation_capacity_constraints!(model, y, r, C_hydro, C_wind, C_CCGT, dt) #(TxS)
 
-reserve_offer_curve = reserve_offer_constraints!(model, v, r, pJ, reserve_prices) #(TxS)
+#reserve_offer_curve = reserve_offer_constraints!(model, v, r, pJ, reserve_prices) #(TxS)
 
-reserve_allocation = reserve_allocation_constraints!(model, r, r_hydro, r_CCGT, T, S, E) #(TxSxE)
+#reserve_allocation = reserve_allocation_constraints!(model, r, r_hydro, r_CCGT, T, S, E) #(TxSxE)
 
 second_stage_offer_limit = second_stage_offer_limit_constraints!(model, y, r, z, C_CCGT, C_hydro, C_wind, dt) #(TxSxE)
 
-ID_trade_ub, ID_trade_lb = intraday_trade_constraints!(model, z, α , C_CCGT, C_hydro, C_wind, dt, T, S, E) #2x(TxSxE)
+#ID_trade_ub, ID_trade_lb = intraday_trade_constraints!(model, z, α , C_CCGT, C_hydro, C_wind, dt, T, S, E) #2x(TxSxE)
 
 imbalance, excess_ub, deficit_ub = imbalance_settlement_constraints!(model, delta_excess, delta_deficit, y, z, g_CCGT, g_hydro, g_wind) #3x(TxSxExW)
 
@@ -173,6 +173,7 @@ ramping_lb, ramping_ub = CCGT_ramping_constraints!(model, g_CCGT, u_CCGT_start, 
 optimizer = optimizer_with_attributes(
     () -> Gurobi.Optimizer(Gurobi.Env()),
     "TimeLimit"   => timelimit1,
+    "MIPGap" => 1e-9,
     "LogFile" => path*"solve_1.txt",
     "LogToConsole" => 0,
 )
@@ -191,21 +192,23 @@ println("solve time: ", first_solve)
 obj_value = objective_value(model)
 
 obj_expression = objective!(model, DA_revenue = true,
-                                ID_revenue = false,                         # <=
-                                reserve_revenue = false,                    # <=
+                                ID_revenue = false,                           # <=
+                                reserve_revenue = false,                      # <=
                                 imbalance_revenue =true,
                                 CCGT_costs = true,
                                 hydro_costs = true,
                                 WVF_piecewise = false,
                                 return_expression=true)
 
-obj_value_constraint = @constraint(model, obj_expression == obj_value)
+obj_value_constraint = @constraint(model, obj_expression ≥ obj_value)
 
 new_objective = objective_degenerate_solutions!(model, delta_excess, delta_deficit, T, S, E, W)
 
+
+
 optimizer = optimizer_with_attributes(
     () -> Gurobi.Optimizer(Gurobi.Env()),
-    #"MIPFocus"    => 3,                                                     # <=
+    "MIPFocus"    => 1,
     "TimeLimit"   => timelimit2,
     "LogFile" => path*"solve_2.txt",
     "LogToConsole" => 0,
