@@ -1,4 +1,6 @@
 using Plots
+using CSV
+using DataFrames
 
 
 function plot_bid_curve(x, pI, path::String; plot_DA_prices::Bool=false, default_limits::Bool=true, DA_prices=[], ylimits = [])
@@ -105,4 +107,51 @@ function plot_transposed_reserve_offer_curve(v, pJ, h::Int, path::String; plot_r
     
     savefig(path)
 
+end
+
+
+function plot_generation_mix(path::String, run_path::String, ylimit::Int = 180)
+
+    generation = CSV.read(path*"Generation_"*run_path*".csv", DataFrame)
+
+    hydro = generation.Hydro
+
+    hydro_wind = generation.Hydro .+ generation.Wind
+
+    hydro_wind_CCGT = generation.Hydro .+ generation.Wind .+ generation.CCGT
+
+    DA_commitment = generation.DA_commitment
+
+    plot(generation.Hour, hydro_wind_CCGT, fillrange = [0, 0], c = :orange, label = "CCGT", xlim = (1, 24), ylim = (-1, ylimit), dpi=200, size = (800, 400))
+    plot!(generation.Hour, hydro_wind, fillrange = [0, 0], c = :palegreen4, label = "Wind",)
+    plot!(generation.Hour, hydro, fillrange = [0, 0], c = :blue4, label = "Hydro",)
+    plot!(generation.Hour, DA_commitment, c = :grey, lw = 2, label = "DA commitment")
+    xticks!([1:24...])
+    yticks!([0:10...].*20)
+    xlabel!("Hour")
+    ylabel!("MWh")
+
+    savefig(path*"Generation_plot")
+end
+
+
+function plot_reserve_mix(path::String, run_path::String, ylimit::Int = 180)
+
+    generation = CSV.read(path*"Generation_"*run_path*".csv", DataFrame)
+
+    hydro = generation.Reserve_hydro
+
+    hydro_CCGT = generation.Reserve_hydro .+ generation.Reserve_CCGT
+
+    Reserve_commitment = generation.Reserve_commitment
+
+    plot(generation.Hour, hydro_CCGT, fillrange = [0, 0], c = :orange2, label = "CCGT", xlim = (1, 24), ylim = (-1, ylimit), dpi=200, size = (800, 400))
+    plot!(generation.Hour, hydro, fillrange = [0, 0], c = :steelblue, label = "Hydro")
+    plot!(generation.Hour, Reserve_commitment, c = :grey18, lw = 2, label = "Reserve commitment")
+    xticks!([1:24...])
+    yticks!([0:10...].*20)
+    xlabel!("Hour")
+    ylabel!("MW")
+
+    savefig(path*"Reserve_plot")
 end
