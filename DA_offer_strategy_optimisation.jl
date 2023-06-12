@@ -94,7 +94,7 @@ model = Model()
 α = 0.05
 
 timelimit1 = 600
-timelimit2 = 3600
+timelimit2 = 600
 
 ## -- Setting path for results --
 folder = "RESULTS/Final_model/"
@@ -104,10 +104,10 @@ isdir(path) || mkdir(path)
 @info("path = "*path)
 
 # Results saving
-draw_plots = false
-save_curves = false
-save_results_breakdown = false
-write_jld = false
+draw_plots = true
+save_curves = true
+save_results_breakdown = true
+write_jld = true
 
 ## -- Variables --
 include("variables_no_reserve_or_ID.jl")
@@ -135,13 +135,13 @@ x_constraints = enforcing_bid_order!(model, x, T, nI) #((I-1)xT)
 
 first_stage_offer_limit = first_stage_offer_limit_constraints!(model, x, v, C_CCGT, C_hydro, C_wind, dt, nI) #(T)
 
-generation_capacity_limit = generation_capacity_constraints!(model, y, r, C_hydro, C_wind, C_CCGT, dt) #(TxS)
+#generation_capacity_limit = generation_capacity_constraints!(model, y, r, C_hydro, C_wind, C_CCGT, dt) #(TxS)
 
 #reserve_offer_curve = reserve_offer_constraints!(model, v, r, pJ, reserve_prices) #(TxS)
 
 #reserve_allocation = reserve_allocation_constraints!(model, r, r_hydro, r_CCGT, T, S, E) #(TxSxE)
 
-second_stage_offer_limit = second_stage_offer_limit_constraints!(model, y, r, z, C_CCGT, C_hydro, C_wind, dt) #(TxSxE)
+#second_stage_offer_limit = second_stage_offer_limit_constraints!(model, y, r, z, C_CCGT, C_hydro, C_wind, dt) #(TxSxE)
 
 #ID_trade_ub, ID_trade_lb = intraday_trade_constraints!(model, z, α , C_CCGT, C_hydro, C_wind, dt, T, S, E) #2x(TxSxE)
 
@@ -174,6 +174,8 @@ optimizer = optimizer_with_attributes(
     () -> Gurobi.Optimizer(Gurobi.Env()),
     "TimeLimit"   => timelimit1,
     "MIPGap" => 1e-9,
+    "FeasibilityTol" => 1e-9,
+    "IntFeasTol" => 1e-9,
     "LogFile" => path*"solve_1.txt",
     "LogToConsole" => 0,
 )
@@ -189,7 +191,12 @@ println("solve time: ", first_solve)
 ##########################################################################################
 @info("Optimising over degenerate solutions     ("*Dates.format(now(), "HH:MM")*")")
 
+
 obj_value = objective_value(model)
+
+var = all_variables(model)
+var_solution = value.(var)
+set_start_value.(var, var_solution)
 
 obj_expression = objective!(model, DA_revenue = true,
                                 ID_revenue = false,                           # <=
@@ -200,18 +207,20 @@ obj_expression = objective!(model, DA_revenue = true,
                                 WVF_piecewise = false,
                                 return_expression=true)
 
-obj_value_constraint = @constraint(model, obj_expression ≥ obj_value)
+obj_value_constraint = @constraint(model, obj_expression ≥ obj_value - 0.4)
 
 new_objective = objective_degenerate_solutions!(model, delta_excess, delta_deficit, T, S, E, W)
 
 
-
 optimizer = optimizer_with_attributes(
     () -> Gurobi.Optimizer(Gurobi.Env()),
-    "MIPFocus"    => 1,
+    "MIPFocus"    => 3,
+    "Presolve" => 2, #agressive presolve
     "TimeLimit"   => timelimit2,
+    "FeasibilityTol" => 1e-5,
+    "IntFeasTol" => 1e-5,
     "LogFile" => path*"solve_2.txt",
-    "LogToConsole" => 0,
+    "LogToConsole" => 1,
 )
 set_optimizer(model, optimizer)
 
@@ -302,8 +311,11 @@ if save_results_breakdown
     water_value = sum( π_S[s] * π_E[e] * (B_hydro[1] * value(l_hydro[24, s, e]) + B_hydro[2]) for s in S, e in E)
     operating_costs = - sum(π_S[s] * π_E[e] * S_CCGT_generation * value(g_CCGT[t,s,e]) for t in T, s in S, e in E)
 
-    measures =  ["Profit", "DA profit", "Reserve profit", "ID profit", "ID revenue", "ID costs", "Imbalance settlement", "Imbalance revenue", "Imbalance costs", "Water value", "Operating costs"]
-    values = [obj_value, profit_DA, profit_reserve, profit_ID, revenue_ID, costs_ID, profit_imbalances, excess_imbalances_revenue, deficit_imbalances_cost, water_value, operating_costs]
+    profit_2nd = profit_DA + profit_imbalances + water_value + operating_costs
+
+
+    measures =  ["Profit", "2nd profit", "DA profit", "Reserve profit", "ID profit", "ID revenue", "ID costs", "Imbalance settlement", "Imbalance revenue", "Imbalance costs", "Water value", "Operating costs"]
+    values = [obj_value, profit_2nd, profit_DA, profit_reserve, profit_ID, revenue_ID, costs_ID, profit_imbalances, excess_imbalances_revenue, deficit_imbalances_cost, water_value, operating_costs]
     profit_breakdown = DataFrame(Measure = measures, Values = values)
     pretty_table(io, profit_breakdown)
 
