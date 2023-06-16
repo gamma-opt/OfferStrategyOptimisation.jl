@@ -173,6 +173,9 @@ ramping_lb, ramping_ub = CCGT_ramping_constraints!(model, g_CCGT, u_CCGT_start, 
 optimizer = optimizer_with_attributes(
     () -> Gurobi.Optimizer(Gurobi.Env()),
     "TimeLimit"   => timelimit1,
+    "MIPGap" => 1e-9,
+    "FeasibilityTol" => 1e-9,
+    "IntFeasTol" => 1e-9,
     "LogFile" => path*"solve_1.txt",
     "LogToConsole" => 0,
 )
