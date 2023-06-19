@@ -110,7 +110,7 @@ function plot_transposed_reserve_offer_curve(v, pJ, h::Int, path::String; plot_r
 end
 
 
-function plot_generation_mix(path::String, run_path::String, ylimit::Int = 180)
+function plot_generation_mix(path::String, run_path::String, identifier::String, ylimit::Int = 170)
 
     generation = CSV.read(path*"Generation_"*run_path*".csv", DataFrame)
 
@@ -122,16 +122,17 @@ function plot_generation_mix(path::String, run_path::String, ylimit::Int = 180)
 
     DA_commitment = generation.DA_commitment
 
-    plot(generation.Hour, hydro_wind_CCGT, fillrange = [0, 0], c = :orange, label = "CCGT", xlim = (1, 24), ylim = (-1, ylimit), dpi=200, size = (800, 400))
-    plot!(generation.Hour, hydro_wind, fillrange = [0, 0], c = :palegreen4, label = "Wind",)
-    plot!(generation.Hour, hydro, fillrange = [0, 0], c = :blue4, label = "Hydro",)
-    plot!(generation.Hour, DA_commitment, c = :grey, lw = 2, label = "DA commitment")
-    xticks!([1:24...])
+    plot([0, generation.Hour...], [0, hydro_wind_CCGT...],  linetype=:steppre, fillrange = [0, 0], c = :darkgoldenrod3, label = "CCGT", xlim = (0, 24), ylim = (0, ylimit), dpi=200, size = (800, 400))
+    plot!([0, generation.Hour...], [0, hydro_wind...],      linetype=:steppre, fillrange = [0, 0], c = :darkseagreen3, label = "Wind",)
+    plot!([0, generation.Hour...], [0, hydro...],           linetype=:steppre, fillrange = [0, 0], c = :mediumblue, label = "Hydro",)
+    plot!([0, generation.Hour...], [0, DA_commitment...],   linetype=:steppre, c = :black, lw = 2, label = "DA commitment")
+
+    xticks!([1:24...] .- 0.5, [string(a) for a in 1:24])
     yticks!([0:10...].*20)
     xlabel!("Hour")
     ylabel!("MWh")
 
-    savefig(path*"Generation_plot")
+    savefig(path*"Generation_plot_"*identifier)
 end
 
 
