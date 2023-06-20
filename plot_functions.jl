@@ -136,7 +136,7 @@ function plot_generation_mix(path::String, run_path::String, identifier::String,
 end
 
 
-function plot_reserve_mix(path::String, run_path::String, ylimit::Int = 180)
+function plot_reserve_mix(path::String, run_path::String, identifier::String, ylimit::Int = 80)
 
     generation = CSV.read(path*"Generation_"*run_path*".csv", DataFrame)
 
@@ -146,13 +146,13 @@ function plot_reserve_mix(path::String, run_path::String, ylimit::Int = 180)
 
     Reserve_commitment = generation.Reserve_commitment
 
-    plot(generation.Hour, hydro_CCGT, fillrange = [0, 0], c = :orange2, label = "CCGT", xlim = (1, 24), ylim = (-1, ylimit), dpi=200, size = (800, 400))
-    plot!(generation.Hour, hydro, fillrange = [0, 0], c = :steelblue, label = "Hydro")
-    plot!(generation.Hour, Reserve_commitment, c = :grey18, lw = 2, label = "Reserve commitment")
-    xticks!([1:24...])
-    yticks!([0:10...].*20)
+    plot([0, generation.Hour...], [0, hydro_CCGT...], linetype=:steppre, fillrange = [0, 0], c = :darkgoldenrod3, label = "CCGT", xlim = (0, 24), ylim = (0, ylimit), dpi=200, size = (800, 400))
+    plot!([0, generation.Hour...], [0, hydro...], linetype=:steppre, fillrange = [0, 0], c = :steelblue, label = "Hydro")
+    plot!([0, generation.Hour...], [0, Reserve_commitment...], linetype=:steppre, c = :grey18, lw = 2, label = "Reserve commitment")
+    xticks!([1:24...] .- 0.5, [string(a) for a in 1:24])
+    yticks!([0:10...].*10)
     xlabel!("Hour")
     ylabel!("MW")
 
-    savefig(path*"Reserve_plot")
+    savefig(path*"Reserve_plot_"*identifier)
 end
