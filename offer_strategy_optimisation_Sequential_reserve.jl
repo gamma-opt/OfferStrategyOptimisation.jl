@@ -98,7 +98,7 @@ timelimit2 = 3600
 
 ## -- Setting path for results --
 folder = "RESULTS/Final_model/"
-run_path = "Sequential_FCRD"*string(α)
+run_path = "2-stage_Sequential_"*string(α)
 path = folder*run_path*"/"
 isdir(path) || mkdir(path)
 @info("path = "*path)
