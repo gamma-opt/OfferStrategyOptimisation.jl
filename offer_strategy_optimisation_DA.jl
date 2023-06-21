@@ -98,7 +98,7 @@ timelimit2 = 600
 
 ## -- Setting path for results --
 folder = "RESULTS/Final_model/"
-run_path = "One_market_DA_"*string(α)
+run_path = "DA_"*string(α)
 path = folder*run_path*"/"
 isdir(path) || mkdir(path)
 @info("path = "*path)
