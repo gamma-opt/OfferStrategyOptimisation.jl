@@ -98,7 +98,7 @@ timelimit2 = 3600
 
 ## -- Setting path for results --
 folder = "RESULTS/Final_model/"
-run_path = "Sequential_"*string(α)
+run_path = "3-stage-Sequential_"*string(α)
 path = folder*run_path*"/"
 isdir(path) || mkdir(path)
 @info("path = "*path)
@@ -134,7 +134,7 @@ include("constraints.jl")
 
 ## Fixing day-ahead bidding strategy
 
-file = jldopen("RESULTS/Final_model/One_market_DA_0.05/variable_values.jld","r")
+file = jldopen("RESULTS/Final_model/DA_0.05/variable_values.jld","r")
 DA_optimisation_x = file["x"]
 optimal_DA_bids = [DA_optimisation_x[i,t][1] for i in I, t in T]
 
