@@ -193,6 +193,11 @@ println("solve time: ", first_solve)
 
 obj_value = objective_value(model)
 
+var = all_variables(model)
+var_solution = value.(var)
+set_start_value.(var, var_solution)
+
+
 obj_expression = objective!(model, DA_revenue = true,
                                 ID_revenue = true,
                                 reserve_revenue = true,
