@@ -134,7 +134,7 @@ include("constraints.jl")
 
 ## Fixing day-ahead bidding strategy
 
-file = jldopen("RESULTS/Final_model/Two_markets_DA_reserve_0.05/variable_values.jld","r")
+file = jldopen("RESULTS/Final_model/2_markets_DA_FCRD_0.05/variable_values.jld","r")
 fixed_x = file["x"]
 optimal_DA_bids = [fixed_x[i,t][1] for i in I, t in T]
 
