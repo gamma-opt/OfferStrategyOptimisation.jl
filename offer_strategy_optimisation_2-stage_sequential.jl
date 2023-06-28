@@ -231,6 +231,7 @@ optimizer = optimizer_with_attributes(
     "MIPFocus"    => 3,
     "TimeLimit"   => timelimit2,
     "LogFile" => path*"solve_2.txt",
+    "MIPGap" => 1e-6,
     "LogToConsole" => 0,
 )
 set_optimizer(model, optimizer)
