@@ -215,6 +215,7 @@ optimizer = optimizer_with_attributes(
     () -> Gurobi.Optimizer(Gurobi.Env()),
     "MIPFocus"    => 3,
     "TimeLimit"   => timelimit2,
+    "MIPGap" => 1e-6,
     "LogFile" => path*"solve_2.txt",
     "LogToConsole" => 0,
 )
