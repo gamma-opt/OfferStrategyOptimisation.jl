@@ -204,10 +204,10 @@ println("solve time: ", first_solve)
 
 obj_value = objective_value(model)
 
-
 var = all_variables(model)
 var_solution = value.(var)
 set_start_value.(var, var_solution)
+
 
 obj_expression = objective!(model, DA_revenue = true,
                                 ID_revenue = true,
@@ -226,6 +226,7 @@ optimizer = optimizer_with_attributes(
     () -> Gurobi.Optimizer(Gurobi.Env()),
     "MIPFocus"    => 3,
     "TimeLimit"   => timelimit2,
+    "MIPGap" => 1e-6,
     "LogFile" => path*"solve_2.txt",
     "LogToConsole" => 0,
 )
