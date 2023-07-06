@@ -1,6 +1,7 @@
 using Plots
 using CSV
 using DataFrames
+using Measures
 
 
 function plot_bid_curve(x, pI, path::String; plot_DA_prices::Bool=false, default_limits::Bool=true, DA_prices=[], ylimits = [])
@@ -110,7 +111,7 @@ function plot_transposed_reserve_offer_curve(v, pJ, h::Int, path::String; plot_r
 end
 
 
-function plot_generation_mix(path::String, run_path::String, identifier::String, ylimit::Int = 170)
+function plot_generation_mix(path::String, run_path::String, identifier::String; ylimit::Int = 170, legend::Bool=true, save_on_path = true)
 
     generation = CSV.read(path*"Generation_"*run_path*".csv", DataFrame)
 
@@ -122,21 +123,33 @@ function plot_generation_mix(path::String, run_path::String, identifier::String,
 
     DA_commitment = generation.DA_commitment
 
-    plot([0, generation.Hour...], [0, hydro_wind_CCGT...],  linetype=:steppre, fillrange = [0, 0], c = :darkgoldenrod3, label = "CCGT", xlim = (0, 24), ylim = (0, ylimit), dpi=200, size = (800, 400))
+    plot([0, generation.Hour...], [0, hydro_wind_CCGT...],  linetype=:steppre, fillrange = [0, 0], c = :darkgoldenrod3, label = "CCGT")
     plot!([0, generation.Hour...], [0, hydro_wind...],      linetype=:steppre, fillrange = [0, 0], c = :darkseagreen3, label = "Wind",)
     plot!([0, generation.Hour...], [0, hydro...],           linetype=:steppre, fillrange = [0, 0], c = :mediumblue, label = "Hydro",)
     plot!([0, generation.Hour...], [0, DA_commitment...],   linetype=:steppre, c = :black, lw = 2, label = "DA commitment")
 
+    plot!(xlim = (0, 24), ylim = (0, ylimit), dpi=200, margin = 0.3cm, guidefontsize =  16, tickfontsize= 12, tick_direction = :none)
+
     xticks!([1:24...] .- 0.5, [string(a) for a in 1:24])
     yticks!([0:10...].*20)
     xlabel!("Hour")
-    ylabel!("MWh")
+    ylabel!("Generation (MWh)")
 
-    savefig(path*"Generation_plot_"*identifier)
+    if !legend
+        plot!(legend_position = :none, size = (800, 400))
+    else
+        plot!(legend_position = :outertopright, legend_font_pointsize = 16, size = (1200, 450))
+    end
+
+    if save_on_path
+        savefig(path*"Generation_plot_"*identifier)
+    else
+        savefig("Generation_plot_"*identifier)
+    end
 end
 
 
-function plot_reserve_mix(path::String, run_path::String, identifier::String, ylimit::Int = 80)
+function plot_reserve_mix(path::String, run_path::String, identifier::String; ylimit::Int = 80, legend::Bool=true, save_on_path = true)
 
     generation = CSV.read(path*"Generation_"*run_path*".csv", DataFrame)
 
@@ -146,13 +159,26 @@ function plot_reserve_mix(path::String, run_path::String, identifier::String, yl
 
     Reserve_commitment = generation.Reserve_commitment
 
-    plot([0, generation.Hour...], [0, hydro_CCGT...], linetype=:steppre, fillrange = [0, 0], c = :darkgoldenrod3, label = "CCGT", xlim = (0, 24), ylim = (0, ylimit), dpi=200, size = (800, 400))
+    plot([0, generation.Hour...], [0, hydro_CCGT...], linetype=:steppre, fillrange = [0, 0], c = :darkgoldenrod3, label = "CCGT")
     plot!([0, generation.Hour...], [0, hydro...], linetype=:steppre, fillrange = [0, 0], c = :steelblue, label = "Hydro")
     plot!([0, generation.Hour...], [0, Reserve_commitment...], linetype=:steppre, c = :grey18, lw = 2, label = "Reserve commitment")
+    
+    plot!(xlim = (0, 24), ylim = (0, ylimit), dpi=200, margin = 0.3cm, guidefontsize =  16, tickfontsize= 12, tick_direction = :none)
+    
     xticks!([1:24...] .- 0.5, [string(a) for a in 1:24])
     yticks!([0:10...].*10)
     xlabel!("Hour")
-    ylabel!("MW")
+    ylabel!("Reserve (MWh)")
 
-    savefig(path*"Reserve_plot_"*identifier)
+    if !legend
+        plot!(legend_position = :none, size = (800, 400))
+    else
+        plot!(legend_position = :outertopright, legend_font_pointsize = 16, size = (1200, 450))
+    end
+
+    if save_on_path
+        savefig(path*"Reserve_plot_"*identifier)
+    else
+        savefig("Reserve_plot_"*identifier)
+    end
 end
