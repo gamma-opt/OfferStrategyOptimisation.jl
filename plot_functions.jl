@@ -174,6 +174,7 @@ function plot_reserve_mix(path::String, run_path::String, identifier::String; yl
         plot!(legend_position = :none, size = (800, 400))
     else
         plot!(legend_position = :outertopright, legend_font_pointsize = 16, size = (1200, 450))
+        #plot!(legend_position = :topleft, legend_font_pointsize = 16, size = (800, 400))
     end
 
     if save_on_path
