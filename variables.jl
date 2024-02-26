@@ -2,42 +2,123 @@ using JuMP
 
 ## -- VARIABLES --  
 
-# DA offer quantities
-@variable(model, x[I, T] ≥ 0)
+"Declare variables x, y, v, r, z, Δ⁺, Δ⁻ related to market functions.
 
-# DA dispatch quantities
-@variable(model, y[T, S] ≥ 0)
+If variables for ID or reserve market are not included in the model, the function returns zero matrices for them."
+function market_variables(model::Model, 
+    T::UnitRange{Int64}, 
+    S::UnitRange{Int64}, 
+    E::UnitRange{Int64}, 
+    W::UnitRange{Int64}, 
+    I::UnitRange{Int64}, 
+    J::UnitRange{Int64};
+    include_Reserve::Bool = true,
+    include_ID::Bool = true)
 
-# Reserve offer quantities
-@variable(model, v[J, T] ≥ 0)
+    # DA offer quantities
+    @variable(model, x[I, T] ≥ 0)
 
-# Reserve offer quantities
-@variable(model, r[T, S] ≥ 0)
+    # DA dispatch quantities
+    @variable(model, y[T, S] ≥ 0)
 
-# ID order (trade) quantities
-@variable(model, z[T, S, E])
+    if include_Reserve
+        # Reserve offer quantities
+        @variable(model, v[J, T] ≥ 0)
 
-# Imbalances
-@variable(model, delta_excess[T, S, E, W] ≥ 0)
-@variable(model, delta_deficit[T, S, E, W] ≥ 0)
+        # Reserve offer quantities
+        @variable(model, r[T, S] ≥ 0)
+    else
+        v = zeros(J[end],T[end])
+        r = zeros(T[end], S[end])
+    end
+
+    if include_ID
+        # ID order (trade) quantities
+        @variable(model, z[T, S, E])
+    else
+        z = zeros(T[end], S[end], E[end])
+    end
+
+    # Imbalances
+    @variable(model, delta_excess[T, S, E, W] ≥ 0)
+    @variable(model, delta_deficit[T, S, E, W] ≥ 0)
+
+    return x, y, v, r, z, delta_excess, delta_deficit
+end
 
 
 # -- Hydro power generation --
-@variable(model, g_hydro[T, S, E] ≥ 0)
-@variable(model, u_hydro[T, S, E], Bin)
-@variable(model, u_hydro_start[T, S, E], Bin)
-@variable(model, u_hydro_stop[T, S, E], Bin)
-@variable(model, f_hydro[T, S, E] ≥ 0)
-@variable(model, f_hydro_spill[T, S, E] ≥ 0)
-@variable(model, l_hydro[T, S, E] ≥ 0)
-@variable(model, r_hydro[T, S, E] ≥ 0)
+"Declare hydropower generation related variables g_hydro, u_hydro, u_hydro_start, u_hydro_stop, f_hydro, f_hydro_spill, l_hydro, r_hydro.
 
-# -- Conventional generation --
-@variable(model, g_CCGT[T, S, E] ≥ 0)
-@variable(model, u_CCGT[T, S, E], Bin)
-@variable(model, u_CCGT_start[T, S, E], Bin)
-@variable(model, u_CCGT_stop[T, S, E], Bin)
-@variable(model, r_CCGT[T, S, E] ≥ 0)
+If variables for reserve market or on-off functionality are not included in the model, the function returns zero or one matrices for them.
+"
+function hydropower_variables(model::Model, 
+    T::UnitRange{Int64}, 
+    S::UnitRange{Int64}, 
+    E::UnitRange{Int64};
+    include_Reserve::Bool = true,
+    include_on_off_functionality = true)
+
+    @variable(model, g_hydro[T, S, E] ≥ 0)
+
+    if include_on_off_functionality
+        @variable(model, u_hydro[T, S, E], Bin)
+        @variable(model, u_hydro_start[T, S, E], Bin)
+        @variable(model, u_hydro_stop[T, S, E], Bin)
+    else
+        u_hydro = ones(T[end], S[end], E[end])
+        u_hydro_start = nothing
+        u_hydro_stop = nothing
+    end
+
+
+    @variable(model, f_hydro[T, S, E] ≥ 0)
+    @variable(model, f_hydro_spill[T, S, E] ≥ 0)
+    @variable(model, l_hydro[T, S, E] ≥ 0)
+
+    if include_Reserve
+        @variable(model, r_hydro[T, S, E] ≥ 0)
+    else
+        r_hydro = zeros(T[end], S[end], E[end])
+    end
+
+    return g_hydro, u_hydro, u_hydro_start, u_hydro_stop, f_hydro, f_hydro_spill, l_hydro, r_hydro
+
+end
+
+# -- CCGT generation --
+"Declare CCGT generation related variables g_CCGT, u_CCGT, u_CCGT_start, u_CCGT_stop, r_CCGT.
+
+If variables for reserve market are not included in the model, the function returns zero matrices for them."
+function CCGT_generation_variables(model::Model, 
+    T::UnitRange{Int64}, 
+    S::UnitRange{Int64}, 
+    E::UnitRange{Int64};
+    include_Reserve::Bool = true)
+
+    @variable(model, g_CCGT[T, S, E] ≥ 0)
+    @variable(model, u_CCGT[T, S, E], Bin)
+    @variable(model, u_CCGT_start[T, S, E], Bin)
+    @variable(model, u_CCGT_stop[T, S, E], Bin)
+
+    if include_Reserve
+    @variable(model, r_CCGT[T, S, E] ≥ 0)
+    else
+        r_CCGT = zeros(T[end], S[end], E[end])
+    end
+
+    return g_CCGT, u_CCGT, u_CCGT_start, u_CCGT_stop, r_CCGT
+end
 
 # -- Wind generation --
-@variable(model, g_wind[T, S, E, W] ≥ 0)
+"Declare wind generation related variables g_wind."
+function wind_generation_variables(model::Model,
+    T::UnitRange{Int64}, 
+    S::UnitRange{Int64}, 
+    E::UnitRange{Int64},
+    W::UnitRange{Int64})
+    
+    @variable(model, g_wind[T, S, E, W] ≥ 0)
+
+    return g_wind
+end
