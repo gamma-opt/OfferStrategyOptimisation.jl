@@ -149,15 +149,20 @@ function imbalance_calculation_constraints!(model::Model, sets::Sets, params::Op
 end
 
 
-# -- Hydro on-off state constraints (3) --
-function hydro_on_off_constraints!(model::Model, u_hydro, u_hydro_start, u_hydro_stop, U_hydro_initial, T, S, E)
+# -- Hydro on-off state constraints (3 constraint types) --
+function hydro_on_off_constraints!(model::Model, sets::Sets, params::OperationalParameters)
+    u_hydro = model[:u_hydro]
+    u_hydro_start = model[:u_hydro_start]
+    u_hydro_stop = model[:u_hydro_stop]    
+
+
     hydro_on_off =  Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
     hydro_start =  Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
     hydro_stop =  Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
 
-    for t in T, s in S, e in E
+    for t in sets.T, s in sets.S, e in sets.E
         if t == 1
-            hydro_on_off[t,s,e] = @constraint(model, u_hydro[t,s,e] == U_hydro_initial + u_hydro_start[t,s,e] - u_hydro_stop[t,s,e])
+            hydro_on_off[t,s,e] = @constraint(model, u_hydro[t,s,e] == params.U_hydro_initial + u_hydro_start[t,s,e] - u_hydro_stop[t,s,e])
         else 
             hydro_on_off[t,s,e] = @constraint(model, u_hydro[t,s,e] == u_hydro[t-1,s,e] + u_hydro_start[t,s,e] - u_hydro_stop[t,s,e])
         end
@@ -171,19 +176,23 @@ function hydro_on_off_constraints!(model::Model, u_hydro, u_hydro_start, u_hydro
 end
 
 
-# -- Hydro generation constraints (3) --
-function hydro_generation_constraints!(model::Model, g_hydro, f_hydro, u_hydro, r_hydro, conversion_eta, F_min, F_max, dt, T, S, E)
+# -- Hydro generation constraints (3 constraint types) --
+function hydro_generation_constraints!(model::Model, sets::Sets, params::OperationalParameters)
+    g_hydro = model[:g_hydro]
+    f_hydro = model[:f_hydro]
+    u_hydro = model[:u_hydro]
+    r_hydro = model[:r_hydro]
 
     generation_conversion = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
     discharge_lb = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
     discharge_ub = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
 
 
-    for t in T, s in S, e in E
-        generation_conversion[t,s,e] = @constraint(model, g_hydro[t,s,e] == conversion_eta * f_hydro[t,s,e] * dt)
+    for t in sets.T, s in sets.S, e in sets.E
+        generation_conversion[t,s,e] = @constraint(model, g_hydro[t,s,e] == params.eta * f_hydro[t,s,e] * params.dt)
 
-        discharge_lb[t,s,e] = @constraint(model, u_hydro[t,s,e] * F_min ≤ f_hydro[t,s,e])#+ r_hydro[t,s,e]/conversion_eta)
-        discharge_ub[t,s,e] = @constraint(model, f_hydro[t,s,e] + r_hydro[t,s,e]/conversion_eta ≤ u_hydro[t,s,e] * F_max)
+        discharge_lb[t,s,e] = @constraint(model, u_hydro[t,s,e] * params.F_min ≤ f_hydro[t,s,e])
+        discharge_ub[t,s,e] = @constraint(model, f_hydro[t,s,e] + r_hydro[t,s,e]/params.eta ≤ u_hydro[t,s,e] * params.F_max)
         
     end
 
@@ -193,21 +202,24 @@ end
 
 
 # -- Hydro water level constraints (3) --
-function hydro_water_level_constraints!(model::Model, f_hydro, f_hydro_spill, l_hydro, F_inflow, L_initial, L_min, L_max, N, T, S, E)
+function hydro_water_level_constraints!(model::Model, sets::Sets, params::OperationalParameters)
+    l_hydro = model[:l_hydro]
+    f_hydro = model[:f_hydro]
+    f_hydro_spill = model[:f_hydro_spill]
 
     level_lb = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
     level_ub = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
     level_intertemporal = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
 
-    for t in T, s in S, e in E
+    for t in sets.T, s in sets.S, e in sets.E
 
-        level_lb[t,s,e] = @constraint(model, L_min ≤ l_hydro[t,s,e])
-        level_ub[t,s,e] = @constraint(model, l_hydro[t,s,e] ≤ L_max)
+        level_lb[t,s,e] = @constraint(model, params.L_min ≤ l_hydro[t,s,e])
+        level_ub[t,s,e] = @constraint(model, l_hydro[t,s,e] ≤ params.L_max)
 
         if t == 1
-            level_intertemporal[t,s,e] = @constraint(model, l_hydro[t,s,e]- L_initial == N * (- f_hydro[t,s,e] - f_hydro_spill[t,s,e] + F_inflow[t]))
+            level_intertemporal[t,s,e] = @constraint(model, l_hydro[t,s,e]- params.L_initial == params.N * (- f_hydro[t,s,e] - f_hydro_spill[t,s,e] + params.F_inflow[t]))
         else
-            level_intertemporal[t,s,e] = @constraint(model, l_hydro[t,s,e]- l_hydro[t-1,s,e] == N * (- f_hydro[t,s,e] - f_hydro_spill[t,s,e] + F_inflow[t]))
+            level_intertemporal[t,s,e] = @constraint(model, l_hydro[t,s,e]- l_hydro[t-1,s,e] == params.N * (- f_hydro[t,s,e] - f_hydro_spill[t,s,e] + params.F_inflow[t]))
         end
     end
 
