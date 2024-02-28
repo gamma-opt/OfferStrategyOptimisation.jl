@@ -121,23 +121,31 @@ end
 
 
 # -- Imbalance constraints (3) --
-function imbalance_settlement_constraints!(model::Model, delta_excess, delta_deficit, y, z, g_CCGT, g_hydro, g_wind)
-    imbalances = Dict{Tuple{Int64, Int64, Int64, Int64}, ConstraintRef}()
-    positive_limit = Dict{Tuple{Int64, Int64, Int64, Int64}, ConstraintRef}()
-    negative_limit = Dict{Tuple{Int64, Int64, Int64, Int64}, ConstraintRef}()
+function imbalance_calculation_constraints!(model::Model, sets::Sets, params::OperationalParameters)
+    y = model[:y]
+    z = model[:z]
+    delta_excess = model[:delta_excess]
+    delta_deficit = model[:delta_deficit]
+    g_CCGT = model[:g_CCGT]
+    g_hydro = model[:g_hydro]
+    g_wind = model[:g_wind]
 
-    for t in T, s in S, e in E, w in W
+    imbalances = Dict{Tuple{Int64, Int64, Int64, Int64}, ConstraintRef}()
+    excess_ub = Dict{Tuple{Int64, Int64, Int64, Int64}, ConstraintRef}()
+    deficit_ub = Dict{Tuple{Int64, Int64, Int64, Int64}, ConstraintRef}()
+
+    for t in sets.T, s in sets.S, e in sets.E, w in sets.W
         c1 = @constraint(model, delta_excess[t,s,e,w] - delta_deficit[t,s,e,w] == g_CCGT[t,s,e] + g_hydro[t,s,e] + g_wind[t,s,e,w] - (y[t,s] + z[t,s,e]))
         imbalances[t,s,e,w] = c1
 
-        c2 = @constraint(model, delta_excess[t,s,e,w] ≤ (C_CCGT + C_hydro)*dt + g_wind[t,s,e,w])
-        positive_limit[t,s,e,w] = c2
+        c2 = @constraint(model, delta_excess[t,s,e,w] ≤ (params.C_CCGT + params.C_Hydro)*params.dt + g_wind[t,s,e,w])
+        excess_ub[t,s,e,w] = c2
 
-        c3 = @constraint(model, delta_deficit[t,s,e,w] ≤ (C_CCGT + C_hydro + C_wind)*dt)
-        negative_limit[t,s,e,w] = c3
+        c3 = @constraint(model, delta_deficit[t,s,e,w] ≤ (params.C_CCGT + params.C_Hydro + params.C_Wind)*params.dt)
+        deficit_ub[t,s,e,w] = c3
     end
 
-    imbalances, positive_limit, negative_limit
+    imbalances, excess_ub, deficit_ub
 end
 
 
