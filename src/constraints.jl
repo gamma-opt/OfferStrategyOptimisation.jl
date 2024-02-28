@@ -319,11 +319,13 @@ end
 
 
 # -- CCGT maximum reserve capability --
-function CCGT_reserve_capacity_constraints!(model::Model, r_CCGT, R_CCGT, T, S, E)
+function CCGT_reserve_capacity_constraints!(model::Model, sets::Sets, params::OperationalParameters)
+    r_CCGT = model[:r_CCGT]
+
     reserve_ub = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
 
-    for t in T, s in S, e in E
-        reserve_ub[t,s,e] = @constraint(model, r_CCGT[t,s,e] ≤ R_CCGT)
+    for t in sets.T, s in sets.S, e in sets.E
+        reserve_ub[t,s,e] = @constraint(model, r_CCGT[t,s,e] ≤ params.R_CCGT)
     end
     reserve_ub
 end
