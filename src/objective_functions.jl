@@ -2,7 +2,7 @@ using JuMP
 
 ## -- OBJECTIVE --
 
-function profit_objective(model::Model, sets::Sets, prices::Prices, costs::Costs; 
+function profit_objective!(model::Model, sets::Sets, prices::Prices, costs::Costs; 
     DA_revenue::Bool=true, reserve_revenue::Bool=true, 
     ID_revenue::Bool=true, imbalance_revenue::Bool=true, CCGT_costs::Bool=true, 
     hydro_costs::Bool=true, water_value::Bool=true)
@@ -41,7 +41,7 @@ end
 
 
 ## -- OBJECTIVE FOR DEGENERATE SOLUTIONS --
-function degenerate_solutions_objective(model::Model, sets::Sets)
+function degenerate_solutions_objective!(model::Model, sets::Sets)
     
     T = sets.T
     S = sets.S

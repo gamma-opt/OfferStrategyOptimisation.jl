@@ -5,7 +5,7 @@ using JuMP
 "Declare variables x, y, v, r, z, Δ⁺, Δ⁻ related to market functions.
 
 If variables for ID or reserve market are not included in the model, the function returns zero matrices for them."
-function market_variables(model::Model, 
+function market_variables!(model::Model, 
                         sets::Sets;
                         include_Reserve::Bool = true,
                         include_ID::Bool = true)
@@ -57,7 +57,7 @@ end
 
 If variables for reserve market or on-off functionality are not included in the model, the function returns zero or one matrices for them.
 "
-function hydropower_variables(model::Model, 
+function hydropower_variables!(model::Model, 
     sets::Sets;
     include_Reserve::Bool = true,
     include_on_off_functionality = true)
@@ -102,7 +102,7 @@ end
 "Declare CCGT generation related variables g_CCGT, u_CCGT, u_CCGT_start, u_CCGT_stop, r_CCGT.
 
 If variables for reserve market are not included in the model, the function returns zero matrices for them."
-function CCGT_generation_variables(model::Model, 
+function CCGT_generation_variables!(model::Model, 
     sets::Sets;
     include_Reserve::Bool = true)
 
@@ -129,7 +129,7 @@ end
 
 # -- Wind generation --
 "Declare wind generation related variables g_wind."
-function wind_generation_variables(model::Model, sets::Sets)
+function wind_generation_variables!(model::Model, sets::Sets)
 
     # Readability
     T = sets.T
