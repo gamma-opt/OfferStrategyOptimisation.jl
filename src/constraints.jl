@@ -61,11 +61,15 @@ function reserve_allocation_constraints!(model::Model, sets::Sets)
 end
 
 # -- Capacity limits on first stage offers (1) --
-function first_stage_offer_limit_constraints!(model::Model, x, v, C_CCGT, C_hydro, C_wind, dt, nI)
+function first_stage_capacity_limit_constraints!(model::Model, sets::Sets, params::OperationalParameters)
+    x = model[:x]
+    v = model[:v]
+    J = sets.J
+    nI = sets.I[end]
 
     DA_reserve_offer_limit = Dict{Int64, ConstraintRef}()
-    for t in T
-        c = @constraint(model, x[nI, t] + sum(v[j, t] for j in J)*dt ≤ (C_CCGT + C_hydro + C_wind)*dt )
+    for t in sets.T
+        c = @constraint(model, x[nI, t] + sum(v[j, t] for j in J)*params.dt ≤ (params.C_CCGT + params.C_Hydro + params.C_Wind)*params.dt )
         DA_reserve_offer_limit[t] = c
     end
 
