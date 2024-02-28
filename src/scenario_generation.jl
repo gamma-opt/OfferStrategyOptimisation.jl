@@ -4,15 +4,22 @@ using DataFrames
 using Random
 using StatsBase
 
-"Generate DA price scenarios from data files in CSV format including headers hour (in CET), price. The file should be named path*DA_price_*date.csv. One scenario is generated per each data point (i.e. date)."
-function DA_price_scenario_generation(path::String, dates::Vector{String}, nT, T, nS, S)
+
+
+"Generate DA price scenarios from data files in CSV format including headers hour (in CET), price. The file should be named path*indentifier*date.csv. One scenario is generated per each data point (i.e. date)."
+function DA_price_scenario_generation(path::String, indentifier::String, dates::Vector{String}, sets::Sets)
+    T = sets.T
+    S = sets.S
+    nT = sets.T[end]
+    nS = sets.S[end]
+
 
     if length(dates) == nS
 
         DA_prices =  zeros(Float64, nT, nS) # dimension (TxS)
 
         for s in S
-            DA_price_df = CSV.read(path*"DA_prices_"*string(dates[s])*".csv", DataFrame)
+            DA_price_df = CSV.read(path*indentifier*string(dates[s])*".csv", DataFrame)
 
             for t in T
                 hour = filter(row -> row.hour == t, DA_price_df)
@@ -22,7 +29,7 @@ function DA_price_scenario_generation(path::String, dates::Vector{String}, nT, T
 
         DA_prices
     else
-        println("number of scenarios S don't match!!")
+        throw(DomainError("Number of scenarios S does not match the dates given!"))
     end
 end
 
