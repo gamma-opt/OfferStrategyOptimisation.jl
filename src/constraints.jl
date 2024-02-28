@@ -31,10 +31,14 @@ function bid_quantity_order_constraints!(model, sets::Sets)
 end
 
 # -- Reserve offers clearing (1) --
-function reserve_offer_constraints!(model::Model, v, r, pJ::Vector{Float64}, reserve_price::Matrix{Float64})
+function reserve_offer_curve_constraints!(model::Model, sets::Sets, prices::Prices)
+    v = model[:v]
+    r = model[:r]
+    pJ = sets.pJ
+
     offer_constraints = Dict{Tuple{Int64, Int64}, ConstraintRef}()
-    for t in T, s in S
-        j_cleared = findfirst(pJ .> reserve_price[t,s]) - 1
+    for t in sets.T, s in sets.S
+        j_cleared = findfirst(pJ .> prices.reserve[t,s]) - 1
         c = @constraint(model, r[t,s] == sum(v[j, t] for j in 1:j_cleared))
         offer_constraints[t,s] = c
     end
