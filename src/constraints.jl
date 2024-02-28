@@ -3,12 +3,16 @@ using JuMP
 ## -- CONSTRAINTS --
 
 # -- Day-ahead offer curve clearing (1) --
-function DA_offer_curve_constraints!(model::Model, x, y, pI::Vector{Float64}, DA_price::Matrix{Float64})
+function DA_offer_curve_constraints!(model::Model, sets::Sets, prices::Prices)
     offer_curve_constraints = Dict{Tuple{Int64, Int64}, ConstraintRef}()
 
-    for t in T, s in S
-        i = findfirst(pI .≥ DA_price[t,s]) - 1
-        c = @constraint(model, y[t,s] == (DA_price[t,s] - pI[i])/(pI[i+1] - pI[i])* x[i+1,t] + (pI[i+1] - DA_price[t,s])/(pI[i+1] - pI[i]) *x[i,t])
+    pI = sets.pI
+    x = model[:x]
+    y = model[:y]
+
+    for t in sets.T, s in sets.S
+        i = findfirst(pI .≥ prices.DA[t,s]) - 1
+        c = @constraint(model, y[t,s] == (prices.DA[t,s] - pI[i])/(pI[i+1] - pI[i])* x[i+1,t] + (pI[i+1] - prices.DA[t,s])/(pI[i+1] - pI[i]) *x[i,t])
         offer_curve_constraints[t,s] = c
     end
     offer_curve_constraints
@@ -16,9 +20,11 @@ function DA_offer_curve_constraints!(model::Model, x, y, pI::Vector{Float64}, DA
 end 
 
 # Optional constraints for enforcing x_i-1 ≤ x_i
-function enforcing_bid_order!(model, x, T, nI)
+function bid_quantity_order_constraints!(model, sets::Sets)
+    x = model[:x]
+
     x_constraints = Dict{Tuple{Int64, Int64}, ConstraintRef}()
-    for i = 2:nI, t in T
+    for i = 2:sets.I[end], t in sets.T
         x_constraints[i, t] = @constraint(model, x[i-1, t] ≤ x[i, t])
     end
     x_constraints
