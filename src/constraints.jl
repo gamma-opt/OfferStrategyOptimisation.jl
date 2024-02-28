@@ -106,12 +106,14 @@ function ID_trade_limit_constraints!(model::Model, sets::Sets, params::Operation
 end
 
 # Capacity limit on generation and reserve. Not optional!
-function generation_capacity_constraints!(model, y, r, C_hydro, C_wind, C_CCGT, dt)
-    
-    generation_capacity_limit = Dict{Tuple{Int64, Int64}, ConstraintRef}()
-    for t in T, s in S
+function generation_capacity_constraints!(model::Model, sets::Sets, params::OperationalParameters)
+    y = model[:y]
+    r = model[:r]
 
-        generation_capacity_limit[t,s] = @constraint(model, y[t,s] + r[t,s] * dt ≤ (C_CCGT + C_wind + C_hydro)*dt)
+    generation_capacity_limit = Dict{Tuple{Int64, Int64}, ConstraintRef}()
+    for t in sets.T, s in sets.S
+
+        generation_capacity_limit[t,s] = @constraint(model, y[t,s] + r[t,s] * params.dt ≤ (params.C_CCGT + params.C_Wind + params.C_Hydro) * params.dt)
 
     end
     generation_capacity_limit
