@@ -77,25 +77,29 @@ function first_stage_capacity_limit_constraints!(model::Model, sets::Sets, param
 end
 
 # -- Capacity limits on second stage offers (1) --
-function second_stage_offer_limit_constraints!(model::Model, y, r, z, C_CCGT, C_hydro, C_wind, dt)
+function second_stage_capacity_limit_constraints!(model::Model, sets::Sets, params::OperationalParameters)
+    y = model[:y]
+    r = model[:r]
+    z = model[:z]
 
     ID_offer_limit = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
-    for t in T, s in S, e in E
-        c = @constraint(model, y[t,s] + r[t,s]*dt + z[t,s,e] ≤ (C_CCGT + C_hydro + C_wind)*dt )
+    for t in sets.T, s in sets.S, e in sets.E
+        c = @constraint(model, y[t,s] + r[t,s]*params.dt + z[t,s,e] ≤ (params.C_CCGT + params.C_Hydro + params.C_Wind)*params.dt )
         ID_offer_limit[t, s, e] = c
     end
     ID_offer_limit
 end
 
 ## -- Intraday trade quantity constraint (1) --
-function intraday_trade_constraints!(model::Model, z, α , C_CCGT, C_hydro, C_wind, dt, T, S, E)
+function ID_trade_limit_constraints!(model::Model, sets::Sets, params::OperationalParameters; α = 0.05)
+    z = model[:z]
 
     trade_ub = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
     trade_lb = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
 
-    for t in T, s in S, e in E
-        trade_ub[t,s,e] = @constraint(model, z[t,s,e] ≤ α * (C_CCGT + C_hydro + C_wind) * dt)
-        trade_lb[t,s,e] = @constraint(model, z[t,s,e] ≥ - α * (C_CCGT + C_hydro + C_wind) * dt)
+    for t in sets.T, s in sets.S, e in sets.E
+        trade_ub[t,s,e] = @constraint(model, z[t,s,e] ≤ α * (params.C_CCGT + params.C_Hydro + params.C_Wind) * params.dt)
+        trade_lb[t,s,e] = @constraint(model, z[t,s,e] ≥ - α * (params.C_CCGT + params.C_Hydro + params.C_Wind) * params.dt)
     end
 
     trade_ub, trade_lb
