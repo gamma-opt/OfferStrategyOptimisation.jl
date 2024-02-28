@@ -33,15 +33,19 @@ function DA_price_scenario_generation(path::String, indentifier::String, dates::
     end
 end
 
-"Generate FCRD reserve price scenarios from data files in CSV format. The CSV must include headers hour (in CET) and price. The file should be named path*FCR_up_*date.csv. One scenario is generated per each data point (i.e. date)."
-function reserve_price_scenario_generation(path::String, dates::Vector{String}, nT, T, nS, S)
+"Generate FCRD reserve price scenarios from data files in CSV format. The CSV must include headers hour (in CET) and price. The file should be named path*identifier*date.csv. One scenario is generated per each data point (i.e. date)."
+function reserve_price_scenario_generation(path::String, indentifier::String, dates::Vector{String}, sets::Sets)
+    T = sets.T
+    S = sets.S
+    nT = sets.T[end]
+    nS = sets.S[end]
 
     if length(dates) == nS
 
         reserve_prices =  zeros(Float64, nT, nS) # dimension (TxS)
 
         for s in S
-            reserve_price_df = CSV.read(path*"FCR_up_"*string(dates[s])*".csv", DataFrame)
+            reserve_price_df = CSV.read(path*indentifier*string(dates[s])*".csv", DataFrame)
 
             for t in T
                 hour = filter(row -> row.hour == t, reserve_price_df)
@@ -51,7 +55,7 @@ function reserve_price_scenario_generation(path::String, dates::Vector{String}, 
 
         reserve_prices
     else
-        println("number of scenarios S don't match!!")
+        throw(DomainError("Number of scenarios S does not match the dates given!"))
     end
 end
 
