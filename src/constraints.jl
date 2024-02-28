@@ -46,10 +46,14 @@ function reserve_offer_curve_constraints!(model::Model, sets::Sets, prices::Pric
 end
 
 # -- Reserve allocation to hydro and CCGT (1) --
-function reserve_allocation_constraints!(model::Model, r, r_hydro, r_CCGT, T, S, E)
+function reserve_allocation_constraints!(model::Model, sets::Sets)
+    r = model[:r]
+    r_hydro = model[:r_hydro]
+    r_CCGT = model[:r_CCGT]
+
     allocation_constraints = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
 
-    for t in T, s in S, e in E
+    for t in sets.T, s in sets.S, e in sets.E
         allocation_constraints[t,s,e] = @constraint(model, r[t,s] == r_hydro[t,s,e] + r_CCGT[t,s,e])
     end
 
