@@ -1,4 +1,4 @@
-using Distributions
+using Distributions: Normal, truncated
 using CSV
 using DataFrames
 using Random
