@@ -60,13 +60,24 @@ function reserve_price_scenario_generation(path::String, indentifier::String, da
 end
 
 
-"Generate ID reserve price scenarios from data files in CSV format. The CSV must include headers DeliveryHour (in CET) and Price. The file should be named path*ID_Finland_*date.csv. Scenarios are sampled from the available data for that hour during that day."
-function ID_price_scenario_generation(path::String, dates::Vector{String}, nT, T, nS, S, nE; seed=123)
+"Generate ID reserve price scenarios from data files in CSV format. The CSV must include headers DeliveryHour (in CET) and Price. The file should be named path*identifier*date.csv. Scenarios are sampled from the available data for that hour during that day."
+function ID_price_scenario_generation(path::String, identifier::String, dates::Vector{String}, sets::Sets; seed=123)
+
+    T = sets.T
+    nT = T[end]
+    S = sets.S
+    nS = S[end]
+    nE = sets.E[end]
+
     ID_scenarios = zeros(nT, nS, nE);
     Random.seed!(seed)
 
+    if length(dates) != nS
+        throw(DomainError("Number of scenarios S does not match the dates given!"))
+    end
+
     for s in S
-        df_FI = CSV.read(path*"ID_Finland_"*dates[s]*".csv", DataFrame);
+        df_FI = CSV.read(path*identifier*dates[s]*".csv", DataFrame);
     
         for t in T
             h_prices = filter(row -> row.DeliveryHour==t, df_FI)[:,:Price]
