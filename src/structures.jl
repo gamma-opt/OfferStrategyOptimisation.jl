@@ -72,6 +72,14 @@ struct Costs
         Hydro_startup = 0,
         Hydro_WV = [0.0015, 0])
 
+        if !(isa(Hydro_WV, Vector{Float64}) || isa(Hydro_WV, Vector{Int64}))
+            throw(DomainError("Piecewise linear water value function is currently not supported. Use single linear function"))
+
+        elseif length(Hydro_WV) !=2
+            throw(DomainError("The water value function should be defined using two parameters – its slope and intercept."))
+
+        end
+
         new(CCGT_startup, CCGT_shutdown, CCGT_generation, Hydro_startup, Hydro_WV)
     end
 end
