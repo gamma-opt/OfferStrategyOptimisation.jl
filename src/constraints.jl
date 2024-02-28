@@ -2,39 +2,6 @@ using JuMP
 
 ## -- CONSTRAINTS --
 
-# -- Water value function piecewise function definition (4)--
-function water_value_function_constraints!(model, l_hydro, l_hydro_k, b_hydro_k, L_hydro_k, L_min)
-    WVF_l_hydro = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
-    WVF_SOS1 = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
-    WVF_L_ub = Dict{Tuple{Int64, Int64, Int64, Int64}, ConstraintRef}()
-    WVF_L_lb = Dict{Tuple{Int64, Int64, Int64, Int64}, ConstraintRef}()
-
-    for t in T, s in S, e in E
-        
-        # The water level l_hydro is equal to the water level on interval that is active
-        WVF_l_hydro[t,s,e] = @constraint(model, l_hydro[t,s,e] == sum(l_hydro_k[t,s,e,k] for k in K))
-
-        # Only one interval is active
-        WVF_SOS1[t,s,e] = @constraint(model, sum(b_hydro_k[t,s,e,k] for k in K) == 1)
-    end
-
-    for t in T, s in S, e in E, k in K
-
-        # upper bound for water level on each interval
-        WVF_L_ub[t,s,e,k] = @constraint(model, l_hydro_k[t,s,e,k] ≤ L_hydro_k[k] * b_hydro_k[t,s,e,k])
-
-        # lower bound for water level on each interval
-        if k == 1
-            WVF_L_lb[t,s,e,k] = @constraint(model, L_min ≤ l_hydro_k[t,s,e,k])
-        else
-            WVF_L_lb[t,s,e,k] = @constraint(model, L_hydro_k[k-1] * b_hydro_k[t,s,e,k] ≤ l_hydro_k[t,s,e,k])
-        end
-    end
-    
-    WVF_l_hydro, WVF_SOS1, WVF_L_ub, WVF_L_lb
-end
-
-
 # -- Day-ahead offer curve clearing (1) --
 function DA_offer_curve_constraints!(model::Model, x, y, pI::Vector{Float64}, DA_price::Matrix{Float64})
     offer_curve_constraints = Dict{Tuple{Int64, Int64}, ConstraintRef}()
