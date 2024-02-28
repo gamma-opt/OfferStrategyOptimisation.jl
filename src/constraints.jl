@@ -227,16 +227,20 @@ function hydro_water_level_constraints!(model::Model, sets::Sets, params::Operat
 
 end
 
-# -- Conventional generation on-off state constraints (3) --
-function CCGT_on_off_constraints!(model::Model, u_CCGT, u_CCGT_start, u_CCGT_stop, U_CCGT_initial, T, S, E)
+
+# -- Conventional generation on-off state constraints (3 constraint types) --
+function CCGT_on_off_constraints!(model::Model, sets::Sets, params::OperationalParameters)
+    u_CCGT = model[:u_CCGT]
+    u_CCGT_start = model[:u_CCGT_start]
+    u_CCGT_stop = model[:u_CCGT_stop]
+
     CCGT_on_off =  Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
     CCGT_start =  Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
     CCGT_stop =  Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
 
-
-    for t in T, s in S, e in E
+    for t in sets.T, s in sets.S, e in sets.E
         if t == 1
-            CCGT_on_off[t,s,e] = @constraint(model, u_CCGT[t,s,e] == U_CCGT_initial + u_CCGT_start[t,s,e] - u_CCGT_stop[t,s,e] )
+            CCGT_on_off[t,s,e] = @constraint(model, u_CCGT[t,s,e] == params.U_CCGT_initial + u_CCGT_start[t,s,e] - u_CCGT_stop[t,s,e] )
         else 
             CCGT_on_off[t,s,e] = @constraint(model, u_CCGT[t,s,e] == u_CCGT[t-1,s,e] + u_CCGT_start[t,s,e] - u_CCGT_stop[t,s,e])
         end
@@ -249,18 +253,21 @@ function CCGT_on_off_constraints!(model::Model, u_CCGT, u_CCGT_start, u_CCGT_sto
     CCGT_on_off, CCGT_start, CCGT_stop
 end
 
-# -- CCGT generation on-off minimum time constraints (3) --
-function CCGT_on_off_min_time_constraints!(model::Model, u_CCGT, u_CCGT_start, u_CCGT_stop, U_min_on_time, U_min_off_time, nT, T, S, E)
-    
+# -- CCGT generation minimum on-off time constraints (3 constraint types) --
+function CCGT_min_on_off_time_constraints!(model::Model, sets::Sets, params::OperationalParameters)
+    u_CCGT = model[:u_CCGT]
+    u_CCGT_start = model[:u_CCGT_start]
+    u_CCGT_stop = model[:u_CCGT_stop]
+
     CCGT_min_off_time = Dict{Tuple{Tuple{Int64, Int64}, Int64, Int64}, ConstraintRef}()
     CCGT_min_on_time = Dict{Tuple{Tuple{Int64, Int64}, Int64, Int64}, ConstraintRef}()
 
-    for t in T, s in S, e in E
-        for t1 in t:min(t+U_min_off_time, nT)
+    for t in sets.T, s in sets.S, e in sets.E
+        for t1 in t:min(t + params.U_min_off_time, sets.T[end])
             CCGT_min_off_time[(t, t1), s, e] = @constraint(model, u_CCGT[t1,s,e] ≤ (1 - u_CCGT_stop[t,s,e]))
         end
         
-        for t2 in t:min(t+U_min_on_time, nT)
+        for t2 in t:min(t + params.U_min_on_time, sets.T[end])
             CCGT_min_on_time[(t, t2), s, e] = @constraint(model, u_CCGT_start[t,s,e] ≤ u_CCGT[t2,s,e])
         end
     end
