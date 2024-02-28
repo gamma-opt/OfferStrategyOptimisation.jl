@@ -294,20 +294,23 @@ function CCGT_generation_capacity_constraints!(model::Model, sets::Sets, params:
 end
 
 
-# -- CCGT generation ramping constraints (2) --
-function CCGT_ramping_constraints!(model::Model, g_CCGT, u_CCGT_start, u_CCGT_stop, C_CCGT, G_initial, G_min_level, dt, A_ramp_factor, T, S, E)
-    
+# -- CCGT generation ramping constraints (2 constraint types) --
+function CCGT_ramping_constraints!(model::Model, sets::Sets, params::OperationalParameters)
+    g_CCGT = model[:g_CCGT]
+    u_CCGT_stop = model[:u_CCGT_stop]
+    u_CCGT_start = model[:u_CCGT_start]
+
     ramping_lb = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
     ramping_ub = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
 
-    for t in T, s in S, e in E
+    for t in sets.T, s in sets.S, e in sets.E
     
         if t == 1
-            ramping_lb[t,s,e] = @constraint(model, g_CCGT[t,s,e] - G_initial ≥ - A_ramp_factor * C_CCGT * dt - u_CCGT_stop[t,s,e] * C_CCGT * dt * (G_min_level- A_ramp_factor))
-            ramping_ub[t,s,e] = @constraint(model, g_CCGT[t,s,e] - G_initial ≤ A_ramp_factor * C_CCGT * dt + u_CCGT_start[t,s,e] * C_CCGT * dt * (G_min_level- A_ramp_factor))
+            ramping_lb[t,s,e] = @constraint(model, g_CCGT[t,s,e] - params.G_initial ≥ - params.A_ramp_factor * params.C_CCGT * params.dt - u_CCGT_stop[t,s,e] * params.C_CCGT * params.dt * (params.G_min_level- params.A_ramp_factor))
+            ramping_ub[t,s,e] = @constraint(model, g_CCGT[t,s,e] - params.G_initial ≤ params.A_ramp_factor * params.C_CCGT * params.dt + u_CCGT_start[t,s,e] * params.C_CCGT * params.dt * (params.G_min_level- params.A_ramp_factor))
         else
-            ramping_lb[t,s,e] = @constraint(model, g_CCGT[t,s,e] - g_CCGT[t-1,s,e] ≥ - A_ramp_factor * C_CCGT * dt - u_CCGT_stop[t,s,e] * C_CCGT * dt * (G_min_level- A_ramp_factor))
-            ramping_ub[t,s,e] = @constraint(model, g_CCGT[t,s,e] - g_CCGT[t-1,s,e] ≤ A_ramp_factor * C_CCGT * dt + u_CCGT_start[t,s,e] * C_CCGT * dt * (G_min_level- A_ramp_factor))
+            ramping_lb[t,s,e] = @constraint(model, g_CCGT[t,s,e] - g_CCGT[t-1,s,e] ≥ - params.A_ramp_factor * params.C_CCGT * params.dt - u_CCGT_stop[t,s,e] * params.C_CCGT * params.dt * (params.G_min_level- params.A_ramp_factor))
+            ramping_ub[t,s,e] = @constraint(model, g_CCGT[t,s,e] - g_CCGT[t-1,s,e] ≤ params.A_ramp_factor * params.C_CCGT * params.dt + u_CCGT_start[t,s,e] * params.C_CCGT * params.dt * (params.G_min_level- params.A_ramp_factor))
         end
     end
 
