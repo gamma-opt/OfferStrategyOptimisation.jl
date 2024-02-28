@@ -14,23 +14,23 @@ function DA_price_scenario_generation(path::String, indentifier::String, dates::
     nS = sets.S[end]
 
 
-    if length(dates) == nS
-
-        DA_prices =  zeros(Float64, nT, nS) # dimension (TxS)
-
-        for s in S
-            DA_price_df = CSV.read(path*indentifier*string(dates[s])*".csv", DataFrame)
-
-            for t in T
-                hour = filter(row -> row.hour == t, DA_price_df)
-                DA_prices[t,s] = hour[1,:price]
-            end
-        end
-
-        DA_prices
-    else
+    if length(dates) != nS
         throw(DomainError("Number of scenarios S does not match the dates given!"))
     end
+
+    DA_prices =  zeros(Float64, nT, nS) # dimension (TxS)
+
+    for s in S
+        DA_price_df = CSV.read(path*indentifier*string(dates[s])*".csv", DataFrame)
+
+        for t in T
+            hour = filter(row -> row.hour == t, DA_price_df)
+            DA_prices[t,s] = hour[1,:price]
+        end
+    end
+
+    DA_prices
+    
 end
 
 "Generate FCRD reserve price scenarios from data files in CSV format. The CSV must include headers hour (in CET) and price. The file should be named path*identifier*date.csv. One scenario is generated per each data point (i.e. date)."
@@ -40,23 +40,23 @@ function reserve_price_scenario_generation(path::String, indentifier::String, da
     nT = sets.T[end]
     nS = sets.S[end]
 
-    if length(dates) == nS
-
-        reserve_prices =  zeros(Float64, nT, nS) # dimension (TxS)
-
-        for s in S
-            reserve_price_df = CSV.read(path*indentifier*string(dates[s])*".csv", DataFrame)
-
-            for t in T
-                hour = filter(row -> row.hour == t, reserve_price_df)
-                reserve_prices[t,s] = hour[1,:price]
-            end
-        end
-
-        reserve_prices
-    else
+    if length(dates) != nS
         throw(DomainError("Number of scenarios S does not match the dates given!"))
     end
+
+    reserve_prices =  zeros(Float64, nT, nS) # dimension (TxS)
+
+    for s in S
+        reserve_price_df = CSV.read(path*indentifier*string(dates[s])*".csv", DataFrame)
+
+        for t in T
+            hour = filter(row -> row.hour == t, reserve_price_df)
+            reserve_prices[t,s] = hour[1,:price]
+        end
+    end
+
+    reserve_prices
+    
 end
 
 
@@ -69,12 +69,12 @@ function ID_price_scenario_generation(path::String, identifier::String, dates::V
     nS = S[end]
     nE = sets.E[end]
 
-    ID_scenarios = zeros(nT, nS, nE);
-    Random.seed!(seed)
-
     if length(dates) != nS
         throw(DomainError("Number of scenarios S does not match the dates given!"))
     end
+
+    ID_scenarios = zeros(nT, nS, nE);
+    Random.seed!(seed)
 
     for s in S
         df_FI = CSV.read(path*identifier*dates[s]*".csv", DataFrame);
