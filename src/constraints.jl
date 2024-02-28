@@ -275,15 +275,19 @@ function CCGT_min_on_off_time_constraints!(model::Model, sets::Sets, params::Ope
     CCGT_min_off_time, CCGT_min_on_time
 end
 
-# -- CCGT generation limit constraints (2) --
-function CCGT_generation_limit_constraints!(model::Model, g_CCGT, r_CCGT, u_CCGT, C_CCGT, G_min_level, dt, T, S, E)
+# -- CCGT generation capacity limit constraints (2 constraint types) --
+function CCGT_generation_capacity_constraints!(model::Model, sets::Sets, params::OperationalParameters)
+    g_CCGT = model[:g_CCGT]
+    r_CCGT = model[:r_CCGT]
+    u_CCGT = model[:u_CCGT]
+
     generation_ub = Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
     generation_lb =  Dict{Tuple{Int64, Int64, Int64}, ConstraintRef}()
    
 
-    for t in T, s in S, e in E
-        generation_ub[t,s,e] = @constraint(model, g_CCGT[t,s,e] + r_CCGT[t,s,e] * dt ≤ u_CCGT[t,s,e] * C_CCGT * dt)
-        generation_lb[t,s,e] = @constraint(model, g_CCGT[t,s,e] ≥ u_CCGT[t,s,e] * C_CCGT * dt * G_min_level)
+    for t in sets.T, s in sets.S, e in sets.E
+        generation_ub[t,s,e] = @constraint(model, g_CCGT[t,s,e] + r_CCGT[t,s,e] * params.dt ≤ u_CCGT[t,s,e] * params.C_CCGT * params.dt)
+        generation_lb[t,s,e] = @constraint(model, g_CCGT[t,s,e] ≥ u_CCGT[t,s,e] * params.C_CCGT * params.dt * params.G_min_level)
     end
 
     generation_ub, generation_lb
