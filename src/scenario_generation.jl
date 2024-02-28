@@ -173,15 +173,25 @@ function imbalance_price_scenario_generation(path::String, identifier::String, d
 end
 
 
-
-function wind_scenario_generation(path::String,  dates::Vector{String}, nT, T, nS, S, nE, nW; stdev=0.1, round_to_digits=4, seed=123)
+"Generate wind scenarios from data files in CSV format. The CSV must include headers hour (in CET) and wind_factor_forecast. The file should be named path*identifier*date.csv. Scenarios are generated from a truncated normal distrition on [0,1] with mean = wind factor forecast, stdev parameter."
+function wind_scenario_generation(path::String, identifier::String, dates::Vector{String}, sets::Sets; stdev=0.1, round_to_digits=4, seed=123)
+    T = sets.T
+    nT = T[end]
+    S = sets.S
+    nS = S[end]
+    E = sets.E
+    nE = E[end]
+    nW = sets.W[end]
+    if length(dates) != nS
+        throw(DomainError("Number of scenarios S does not match the dates given!"))
+    end
 
     W_scenarios = zeros(nT, nS, nE, nW);
     Random.seed!(seed)
     
     for s in S
     
-        df = CSV.read(path*"wind_data_"*dates[s]*".csv", DataFrame)
+        df = CSV.read(path*identifier*dates[s]*".csv", DataFrame)
 
         for t in T
 
