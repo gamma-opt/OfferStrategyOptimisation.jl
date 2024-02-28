@@ -91,78 +91,85 @@ end
 
 
 
-"Generate imbalance settlement price scenarios from data files in CSV format. The CSV must include headers hour (in CET) and difference, which is the different between DA and imbalance price (DA-imbalance) . The file should be named path*imbalance_prices_*date.csv. Scenarios are generated in a rule based manner according to the deviation (i.e. the difference)."
-function imbalance_price_scenario_generation(path::String, dates::Vector{String}, nT, T, nS, S, nE, E, nW; factor::Int=2)
+"Generate imbalance settlement price scenarios from data files in CSV format. The CSV must include headers hour (in CET) and difference, which is the different between DA and imbalance price (DA-imbalance) . The file should be named path*identifier*date.csv. Scenarios are generated in a rule based manner according to the deviation (i.e. the difference)."
+function imbalance_price_scenario_generation(path::String, identifier::String, dates::Vector{String}, sets::Sets; factor::Int=2)
+    T = sets.T
+    nT = T[end]
+    S = sets.S
+    nS = S[end]
+    E = sets.E
+    nE = E[end]
+    nW = sets.W[end]
 
-    if length(dates) == nS
+    if length(dates) != nS
+        throw(DomainError("Number of scenarios S does not match the dates given!"))
+    end
 
-        price_up = zeros(Float64, nT, nS, nE, nW); # dimension (TxSxExW)     
-        price_down = zeros(Float64, nT, nS, nE, nW); # dimension (TxSxExW)
+    price_up = zeros(Float64, nT, nS, nE, nW); # dimension (TxSxExW)     
+    price_down = zeros(Float64, nT, nS, nE, nW); # dimension (TxSxExW)
 
-        for s in S
-            balance_price_data = CSV.read(path*"imbalance_prices_"*dates[s]*".csv", DataFrame)
+    for s in S
+        balance_price_data = CSV.read(path*identifier*dates[s]*".csv", DataFrame)
 
-            for t in T
+        for t in T
 
-                data = filter(row -> row.hour == t, balance_price_data)
-                difference = round.(data.difference/factor, digits = 2)
-                deviation = abs.(difference)
-
-
-                # Up-regulation hour. price_down = DA price
-                if difference < [0]
-                    
-                    # up-regulating hour as it is in data
-                    low_up = data.price_up - deviation # notice low_up > DA price
-                    low_down = data.DA_price
-
-                    mid_up = data.price_up # realisation
-                    mid_down = data.DA_price 
-
-                    high_up = data.price_up + deviation # notice low_up >> DA price
-                    high_down = data.DA_price
-            
-    
-                # Down-regulation hour. price_up = DA price
-                elseif deviation > [0] 
-            
-                    # down-regulating hour as it is in data
-                    low_up = data.DA_price
-                    low_down = data.price_down - deviation # notice low_down << DA price
-
-                    mid_up = data.DA_price
-                    mid_down = data.price_down # realisation
-
-                    high_up = data.DA_price
-                    high_down = data.price_down + deviation # notice high_down < DA price
+            data = filter(row -> row.hour == t, balance_price_data)
+            difference = round.(data.difference/factor, digits = 2)
+            deviation = abs.(difference)
 
 
-                # No regulation. price_up = price_down = DA_price
-                else 
-            
-                    low_up = data.DA_price
-                    low_down = data.DA_price
-                    
-                    mid_up = data.DA_price 
-                    mid_down = data.DA_price
-                    
-                    high_up = data.DA_price
-                    high_down = data.DA_price
-                end
+            # Up-regulation hour. price_down = DA price
+            if difference < [0]
+                
+                # up-regulating hour as it is in data
+                low_up = data.price_up - deviation # notice low_up > DA price
+                low_down = data.DA_price
 
-                for e in E
-                    price_up[t,s,e,:] = [low_up mid_up high_up]
-                    price_down[t,s,e,:] = [low_down mid_down high_down]
-                end
+                mid_up = data.price_up # realisation
+                mid_down = data.DA_price 
+
+                high_up = data.price_up + deviation # notice low_up >> DA price
+                high_down = data.DA_price
+        
+
+            # Down-regulation hour. price_up = DA price
+            elseif deviation > [0] 
+        
+                # down-regulating hour as it is in data
+                low_up = data.DA_price
+                low_down = data.price_down - deviation # notice low_down << DA price
+
+                mid_up = data.DA_price
+                mid_down = data.price_down # realisation
+
+                high_up = data.DA_price
+                high_down = data.price_down + deviation # notice high_down < DA price
+
+
+            # No regulation. price_up = price_down = DA_price
+            else 
+        
+                low_up = data.DA_price
+                low_down = data.DA_price
+                
+                mid_up = data.DA_price 
+                mid_down = data.DA_price
+                
+                high_up = data.DA_price
+                high_down = data.DA_price
+            end
+
+            for e in E
+                price_up[t,s,e,:] = [low_up mid_up high_up]
+                price_down[t,s,e,:] = [low_down mid_down high_down]
             end
         end
-
-        # Retun prices
-        price_up, price_down
-   
-    else
-        println("number of scenarios S don't match!!")
     end
+
+    # Retun prices
+    price_up, price_down
+   
+
 end
 
 
