@@ -330,12 +330,14 @@ function CCGT_reserve_capacity_constraints!(model::Model, sets::Sets, params::Op
     reserve_ub
 end
 
-# -- Wind generation operational constraint (1) --
-function wind_generation_constraints!(model::Model, g_wind, W_realisation, C_wind, dt, T, S, E, W)
+# -- Wind generation operational constraint (1 constraint type) --
+function wind_generation_constraints!(model::Model, sets::Sets, params::OperationalParameters, wind_factor::Array{Float64})
+    g_wind = model[:g_wind]
+    
     wind_generation = Dict{Tuple{Int64, Int64, Int64, Int64}, ConstraintRef}()
 
-    for t in T, s in S, e in E, w in W
-        wind_generation[t,s,e,w] = @constraint(model, g_wind[t,s,e,w] ≤ W_realisation[t,s,e,w] * C_wind * dt)
+    for t in sets.T, s in sets.S, e in sets.E, w in sets.W
+        wind_generation[t,s,e,w] = @constraint(model, g_wind[t,s,e,w] ≤ wind_factor[t,s,e,w] * params.C_Wind * params.dt)
     end
     wind_generation
 end
