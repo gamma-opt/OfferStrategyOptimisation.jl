@@ -19,7 +19,7 @@ function DA_offer_curve_constraints!(model::Model, sets::Sets, prices::Prices)
 
 end 
 
-# Optional constraints for enforcing x_i-1 ≤ x_i
+# -- Constraints for enforcing x_i-1 ≤ x_i (1) --
 function bid_quantity_order_constraints!(model, sets::Sets)
     x = model[:x]
 
