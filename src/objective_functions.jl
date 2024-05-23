@@ -30,7 +30,13 @@ function profit_objective!(model::Model, sets::Sets, prices::Prices, costs::Cost
 
    
 
-    hydro_startup = hydro_costs ? @expression(model, sum( π_S[s] * π_E[e] * costs.Hydro_startup * model[:u_hydro_start][t,s,e] for t in T, s in S, e in E)) : 0
+    if hydro_costs
+        hydro_startup = @expression(model, sum( π_S[s] * π_E[e] * costs.Hydro_startup * model[:u_hydro_start][t,s,e] for t in T, s in S, e in E))
+    else
+        hydro_startup = 0
+        @warn("Hydro start up costs not considered. Variables u_hydro_start and u_hydro_stop and constraints concerning them are unnecessary.")
+    end
+
 
     hydro_opportunity_cost = water_value ? @expression(model, - sum( π_S[s] * π_E[e] * (costs.Hydro_WV[1] * model[:l_hydro][t, s, e] + costs.Hydro_WV[2]) for t = T[end], s in S, e in E)) : 0
 

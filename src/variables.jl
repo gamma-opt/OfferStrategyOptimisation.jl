@@ -65,7 +65,7 @@ If variables for reserve market or on-off functionality are not included in the 
 function hydropower_variables!(model::Model, 
     sets::Sets;
     include_reserve::Bool = true,
-    include_on_off_functionality = true)
+    include_start_stop = true)
 
 
     # Readability
@@ -75,15 +75,15 @@ function hydropower_variables!(model::Model,
 
 
     @variable(model, g_hydro[T, S, E] ≥ 0)
+    @variable(model, u_hydro[T, S, E], Bin)
 
-    if include_on_off_functionality
-        @variable(model, u_hydro[T, S, E], Bin)
+    if include_start_stop
         @variable(model, u_hydro_start[T, S, E], Bin)
         @variable(model, u_hydro_stop[T, S, E], Bin)
     else
-        u_hydro = ones(T[end], S[end], E[end])
         u_hydro_start = nothing
         u_hydro_stop = nothing
+        @warn("Variables u_hydro_start and u_hydro_stop excluded from model. Make sure hydro_costs turned off in objective.")
     end
 
 
