@@ -7,7 +7,7 @@ using JuMP
 If variables for ID or reserve market are not included in the model, the function returns zero matrices for them."
 function market_variables!(model::Model, 
                         sets::Sets;
-                        include_Reserve::Bool = true,
+                        include_reserve::Bool = true,
                         include_ID::Bool = true)
 
     # Readability
@@ -25,22 +25,27 @@ function market_variables!(model::Model,
     # DA dispatch quantities
     @variable(model, y[T, S] ≥ 0)
 
-    if include_Reserve
+    if include_reserve
         # Reserve offer quantities
         @variable(model, v[J, T] ≥ 0)
 
         # Reserve offer quantities
         @variable(model, r[T, S] ≥ 0)
     else
-        v = zeros(J[end],T[end])
-        r = zeros(T[end], S[end])
+        # Reserve offer quantities
+        @variable(model, v[J, T] == 0)
+
+        # Reserve offer quantities
+        @variable(model, r[T, S] == 0)
+        @warn("Reserve market variables v and r fixed to zero.")
     end
 
     if include_ID
         # ID order (trade) quantities
         @variable(model, z[T, S, E])
     else
-        z = zeros(T[end], S[end], E[end])
+        @variable(model, z[T, S, E] == 0)
+        @warn("Intraday market variables z fixed to zero.")
     end
 
     # Imbalances
@@ -59,7 +64,7 @@ If variables for reserve market or on-off functionality are not included in the 
 "
 function hydropower_variables!(model::Model, 
     sets::Sets;
-    include_Reserve::Bool = true,
+    include_reserve::Bool = true,
     include_on_off_functionality = true)
 
 
@@ -86,10 +91,11 @@ function hydropower_variables!(model::Model,
     @variable(model, f_hydro_spill[T, S, E] ≥ 0)
     @variable(model, l_hydro[T, S, E] ≥ 0)
 
-    if include_Reserve
+    if include_reserve
         @variable(model, r_hydro[T, S, E] ≥ 0)
     else
-        r_hydro = zeros(T[end], S[end], E[end])
+        @variable(model, r_hydro[T, S, E] == 0)
+        @warn("Reserve market variables r_hydro fixed to zero.")
     end
 
     return g_hydro, u_hydro, u_hydro_start, u_hydro_stop, f_hydro, f_hydro_spill, l_hydro, r_hydro
@@ -104,7 +110,7 @@ end
 If variables for reserve market are not included in the model, the function returns zero matrices for them."
 function CCGT_generation_variables!(model::Model, 
     sets::Sets;
-    include_Reserve::Bool = true)
+    include_reserve::Bool = true)
 
     # Readability
     T = sets.T
@@ -116,10 +122,11 @@ function CCGT_generation_variables!(model::Model,
     @variable(model, u_CCGT_start[T, S, E], Bin)
     @variable(model, u_CCGT_stop[T, S, E], Bin)
 
-    if include_Reserve
-    @variable(model, r_CCGT[T, S, E] ≥ 0)
+    if include_reserve
+        @variable(model, r_CCGT[T, S, E] ≥ 0)
     else
-        r_CCGT = zeros(T[end], S[end], E[end])
+        @variable(model, r_CCGT[T, S, E] == 0)
+        @warn("Reserve market variables r_CCGT fixed to zero.")
     end
 
     return g_CCGT, u_CCGT, u_CCGT_start, u_CCGT_stop, r_CCGT
