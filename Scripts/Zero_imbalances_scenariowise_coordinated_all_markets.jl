@@ -15,8 +15,8 @@ include("../src/scenario_generation.jl")
 include("../src/variables.jl")
 include("../src/objective_functions.jl")
 include("../src/constraints.jl")
-include("../Plotting/results_analysis.jl")
-include("../Plotting/plot_functions.jl")
+include("Analysing_Results/results_analysis.jl")
+include("Analysing_Results/plot_functions.jl")
 
 
 @info("Start time    ("*Dates.format(now(), "HH:MM")*")")
@@ -26,7 +26,7 @@ include("../Plotting/plot_functions.jl")
 
 @info("Initialising parameters")
 
-dates = ["20220301", "20220302"]#, "20220308", "20220309", "20220315", "20220316", "20230221","20230222", "20230228", "20230301"]
+dates = ["20220301", "20220302", "20220308", "20220309", "20220315", "20220316", "20230221","20230222", "20230228", "20230301"]
 
 sets = Sets(S = 1:length(dates), πS = fill(1/length(dates), length(dates)))
 costs = Costs()

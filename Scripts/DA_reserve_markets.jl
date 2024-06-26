@@ -15,8 +15,8 @@ include("../src/scenario_generation.jl")
 include("../src/variables.jl")
 include("../src/objective_functions.jl")
 include("../src/constraints.jl")
-include("../Plotting/results_analysis.jl")
-include("../Plotting/plot_functions.jl")
+include("Analysing_Results/results_analysis.jl")
+include("Analysing_Results/plot_functions.jl")
 
 
 @info("Start time    ("*Dates.format(now(), "HH:MM")*")")
