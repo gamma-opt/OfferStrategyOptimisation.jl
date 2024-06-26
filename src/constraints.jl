@@ -342,3 +342,30 @@ function wind_generation_constraints!(model::Model, sets::Sets, params::Operatio
     wind_generation
 end
 
+
+# -- Zero expected imbalances (1 constraint) --
+function zero_expected_imbalances_constraints!(model::Model, sets::Sets; per_scenario_s::Bool = false)
+    delta_excess = model[:delta_excess]
+    delta_deficit = model[:delta_deficit]
+
+    # Generate zero imbalances constraint for every day-ahead price scenario s in each hour t
+    if per_scenario_s
+
+        zero_imbalances = Dict{Tuple{Int64, Int64}, ConstraintRef}()
+        
+        for t in sets.T, s in sets.S
+            zero_imbalances[t,s] = @constraint(model, sum((delta_excess[t,s,e,w] - delta_deficit[t,s,e,w]) for e in sets.E, w in sets.W) == 0)
+        end
+
+    
+    else # Generate zero imbalances constraint for every hour t
+
+        zero_imbalances = Dict{Int64, ConstraintRef}()
+        
+        for t in sets.T
+            zero_imbalances[t] = @constraint(model, sum((delta_excess[t,s,e,w] - delta_deficit[t,s,e,w]) for s in sets.S, e in sets.E, w in sets.W) == 0)
+        end
+    end
+
+    zero_imbalances
+end
