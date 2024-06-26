@@ -8,3 +8,10 @@ Plotting/**
 **.pdf
 **.txt
 **.rtf
+DIPPA_scripts/**
+PSCC_work/**
+src/depricated/**
+Testing_results/**
+Archive/**
+Testing_full_instance/**
+Implementation_of_CVar/**
